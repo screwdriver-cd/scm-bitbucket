@@ -91,8 +91,10 @@ class BitbucketScm extends Scm {
                     throw new Error(`STATUS CODE ${response.statusCode}: ${response.body}`);
                 }
 
+                const uuid = JSON.parse(response.body).repository.uuid;
+
                 return `${repoInfo.hostname}:${repoInfo.username}` +
-                    `/${response.body.uuid}:${repoInfo.branch}`;
+                    `/${uuid}:${repoInfo.branch}`;
             });
     }
 
@@ -169,7 +171,7 @@ class BitbucketScm extends Scm {
 
         return this.breaker.runCommand(options)
             .then((response) => {
-                const body = response.body;
+                const body = JSON.parse(response.body);
 
                 if (response.statusCode !== 200) {
                     throw new Error(`STATUS CODE ${response.statusCode}: ${body}`);
@@ -203,7 +205,7 @@ class BitbucketScm extends Scm {
 
         return this.breaker.runCommand(options)
             .then((response) => {
-                const body = response.body;
+                const body = JSON.parse(response.body);
 
                 if (response.statusCode !== 200) {
                     throw new Error(`STATUS CODE ${response.statusCode}: ${body}`);
@@ -235,7 +237,7 @@ class BitbucketScm extends Scm {
 
         return this.breaker.runCommand(options)
             .then((response) => {
-                const body = response.body;
+                const body = JSON.parse(response.body);
 
                 if (response.statusCode !== 200) {
                     throw new Error(`STATUS CODE ${response.statusCode}: ${body}`);
@@ -276,7 +278,7 @@ class BitbucketScm extends Scm {
                     throw new Error(`STATUS CODE ${response.statusCode}: ${response.body}`);
                 }
 
-                return response.body.target.hash;
+                return JSON.parse(response.body).target.hash;
             });
     }
 
@@ -307,7 +309,7 @@ class BitbucketScm extends Scm {
                     throw new Error(`STATUS CODE ${response.statusCode}: ${response.body}`);
                 }
 
-                return response.body.data;
+                return JSON.parse(response.body).data;
             });
     }
 
@@ -342,7 +344,7 @@ class BitbucketScm extends Scm {
                         throw new Error(`STATUS CODE ${response.statusCode}: ${response.body}`);
                     }
 
-                    return response.body.values.some(r => r.uuid === uuid);
+                    return JSON.parse(response.body).values.some(r => r.uuid === uuid);
                 });
         };
 
