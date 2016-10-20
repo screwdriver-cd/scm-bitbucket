@@ -55,17 +55,17 @@ describe('index', () => {
         beforeEach(() => {
             fakeResponse = {
                 statusCode: 200,
-                body: {
+                body: JSON.stringify({
                     repository: {
                         html: {
                             href: 'https://bitbucket.org/batman/test'
-                        }
-                    },
-                    type: 'repository',
-                    name: 'test',
-                    full_name: 'batman/test',
-                    uuid: '{de7d7695-1196-46a1-b87d-371b7b2945ab}'
-                }
+                        },
+                        uuid: '{de7d7695-1196-46a1-b87d-371b7b2945ab}',
+                        type: 'repository',
+                        name: 'test',
+                        full_name: 'batman/test'
+                    }
+                })
             };
             expectedOptions = {
                 url: `${apiUrl}/mynewbranch?access_key=myAccessToken`,
@@ -253,7 +253,7 @@ describe('index', () => {
         beforeEach(() => {
             fakeResponse = {
                 statusCode: 200,
-                body: {
+                body: JSON.stringify({
                     username: 'batman',
                     display_name: 'Batman',
                     uuid: '{4f1a9b7f-586e-4e80-b9eb-a7589b4a165f}',
@@ -265,7 +265,7 @@ describe('index', () => {
                             href: 'https://bitbucket.org/account/batman/avatar/32/'
                         }
                     }
-                }
+                })
             };
             requestMock.yieldsAsync(null, fakeResponse, fakeResponse.body);
         });
@@ -290,12 +290,12 @@ describe('index', () => {
         it('rejects if status code is not 200', () => {
             fakeResponse = {
                 statusCode: 404,
-                body: {
+                body: JSON.stringify({
                     error: {
                         message: 'Resource not found',
                         detail: 'There is no API hosted at this URL'
                     }
-                }
+                })
             };
 
             requestMock.yieldsAsync(null, fakeResponse, fakeResponse.body);
@@ -341,14 +341,14 @@ describe('index', () => {
         beforeEach(() => {
             fakeResponse = {
                 statusCode: 200,
-                body: {
+                body: JSON.stringify({
                     full_name: 'batman/mybranch',
                     links: {
                         html: {
                             href: selfLink
                         }
                     }
-                }
+                })
             };
             expectedOptions = {
                 url: apiUrl,
@@ -377,12 +377,12 @@ describe('index', () => {
         it('rejects if status code is not 200', () => {
             fakeResponse = {
                 statusCode: 404,
-                body: {
+                body: JSON.stringify({
                     error: {
                         message: 'Resource not found',
                         detail: 'There is no API hosted at this URL'
                     }
-                }
+                })
             };
 
             requestMock.withArgs(repoOptions).yieldsAsync(null, fakeResponse, fakeResponse.body);
@@ -434,7 +434,7 @@ describe('index', () => {
         beforeEach(() => {
             fakeResponse = {
                 statusCode: 200,
-                body: {
+                body: JSON.stringify({
                     message: 'testing',
                     links: {
                         html: {
@@ -446,11 +446,11 @@ describe('index', () => {
                             username: 'batman'
                         }
                     }
-                }
+                })
             };
             fakeAuthorResponse = {
                 statusCode: 200,
-                body: {
+                body: JSON.stringify({
                     username: 'batman',
                     display_name: 'Batman',
                     uuid: '{4f1a9b7f-586e-4e80-b9eb-a7589b4a165f}',
@@ -462,7 +462,7 @@ describe('index', () => {
                             href: 'https://bitbucket.org/account/batman/avatar/32/'
                         }
                     }
-                }
+                })
             };
             requestMock.withArgs(repoOptions)
                 .yieldsAsync(null, fakeResponse, fakeResponse.body);
@@ -495,12 +495,12 @@ describe('index', () => {
         it('rejects if status code is not 200', () => {
             fakeResponse = {
                 statusCode: 404,
-                body: {
+                body: JSON.stringify({
                     error: {
                         message: 'Resource not found',
                         detail: 'There is no API hosted at this URL'
                     }
-                }
+                })
             };
 
             requestMock.withArgs(repoOptions).yieldsAsync(null, fakeResponse, fakeResponse.body);
@@ -548,11 +548,11 @@ describe('index', () => {
         beforeEach(() => {
             fakeResponse = {
                 statusCode: 200,
-                body: {
+                body: JSON.stringify({
                     target: {
                         hash: 'b98ff332acceca6c477ccd7718b2efa8c67999bb'
                     }
-                }
+                })
             };
             requestMock.yieldsAsync(null, fakeResponse, fakeResponse.body);
         });
@@ -570,12 +570,12 @@ describe('index', () => {
         it('rejects if status code is not 200', () => {
             fakeResponse = {
                 statusCode: 404,
-                body: {
+                body: JSON.stringify({
                     error: {
                         message: 'Resource not found',
                         detail: 'There is no API hosted at this URL'
                     }
-                }
+                })
             };
 
             requestMock.yieldsAsync(null, fakeResponse, fakeResponse.body);
@@ -627,12 +627,12 @@ describe('index', () => {
         beforeEach(() => {
             fakeResponse = {
                 statusCode: 200,
-                body: {
+                body: JSON.stringify({
                     node: '25e63fb4ee8a',
                     path: 'testFile.txt',
                     data: 'THIS IS A TEST',
                     size: 14
-                }
+                })
             };
             requestMock.yieldsAsync(null, fakeResponse, fakeResponse.body);
         });
@@ -647,12 +647,12 @@ describe('index', () => {
         it('rejects if status code is not 200', () => {
             fakeResponse = {
                 statusCode: 404,
-                body: {
+                body: JSON.stringify({
                     error: {
                         message: 'Resource not found',
                         detail: 'There is no API hosted at this URL'
                     }
-                }
+                })
             };
 
             requestMock.yieldsAsync(null, fakeResponse, fakeResponse.body);
@@ -694,30 +694,30 @@ describe('index', () => {
         };
         const readResponse = {
             statusCode: 200,
-            body: {
+            body: JSON.stringify({
                 values: [
                     { uuid: '{repo1}' },
                     { uuid: '{repo2}' },
                     { uuid: '{repo3}' }
                 ]
-            }
+            })
         };
         const writeResponse = {
             statusCode: 200,
-            body: {
+            body: JSON.stringify({
                 values: [
                     { uuid: '{repo1}' },
                     { uuid: '{repo2}' }
                 ]
-            }
+            })
         };
         const adminResponse = {
             statusCode: 200,
-            body: {
+            body: JSON.stringify({
                 values: [
                     { uuid: '{repo1}' }
                 ]
-            }
+            })
         };
 
         beforeEach(() => {
