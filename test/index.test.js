@@ -1020,6 +1020,12 @@ describe('index', () => {
         );
     });
 
+    describe('getWebhookStrategy', () => {
+        it('returns null', () =>
+            assert.isNull(scm.getWebhookStrategy())
+        );
+    });
+
     describe('stats', () => {
         it('returns the correct stats', () => {
             assert.deepEqual(scm.stats(), {

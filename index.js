@@ -456,6 +456,16 @@ class BitbucketScm extends Scm {
     }
 
     /**
+     * Return a hapi auth strategy object for the webhook
+     * Return null if no webhook auth strategy is required
+     * @method getWebhookStrategy
+     * @return {Object}
+     */
+    _getWebhookStrategy() {
+        return null;
+    }
+
+    /**
      * Retrieve stats for the scm
      * @method stats
      * @param  {Response}    Object          Object containing stats for the scm
