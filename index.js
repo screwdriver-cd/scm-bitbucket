@@ -278,59 +278,58 @@ class BitbucketScm extends Scm {
         const [typeHeader, actionHeader] = headers['x-event-key'].split(':');
         const parsed = {};
         const repoOwner = hoek.reach(payload, 'repository.owner.username');
+        const scmContexts = this._getScmContexts();
 
-        return this._getScmContexts().then((scmContexts) => {
-            parsed.scmContext = scmContexts[0];
-            parsed.hookId = headers['x-request-uuid'];
+        parsed.hookId = headers['x-request-uuid'];
+        parsed.scmContext = scmContexts[0];
 
-            switch (typeHeader) {
-            case 'repo': {
-                if (actionHeader !== 'push') {
-                    return Promise.resolve(null);
-                }
-                const changes = hoek.reach(payload, 'push.changes');
-                const link = url.parse(hoek.reach(payload, 'repository.links.html.href'));
-
-                parsed.type = 'repo';
-                parsed.action = 'push';
-                parsed.username = hoek.reach(payload, 'actor.username');
-                parsed.checkoutUrl = `${link.protocol}//${repoOwner}`
-                    + `@${link.hostname}${link.pathname}.git`;
-                parsed.branch = hoek.reach(changes[0], 'new.name');
-                parsed.sha = hoek.reach(changes[0], 'new.target.hash');
-                parsed.lastCommitMessage = hoek.reach(changes[0], 'new.target.message',
-                    { default: '' });
-
-                return Promise.resolve(parsed);
-            }
-            case 'pullrequest': {
-                if (actionHeader === 'created') {
-                    parsed.action = 'opened';
-                } else if (actionHeader === 'updated') {
-                    parsed.action = 'synchronized';
-                } else if (actionHeader === 'fullfilled' || actionHeader === 'rejected') {
-                    parsed.action = 'closed';
-                } else {
-                    return Promise.resolve(null);
-                }
-
-                const link = url.parse(hoek.reach(payload, 'repository.links.html.href'));
-
-                parsed.type = 'pr';
-                parsed.username = hoek.reach(payload, 'actor.username');
-                parsed.checkoutUrl = `${link.protocol}//${repoOwner}`
-                    + `@${link.hostname}${link.pathname}.git`;
-                parsed.branch = hoek.reach(payload, 'pullrequest.destination.branch.name');
-                parsed.sha = hoek.reach(payload, 'pullrequest.source.commit.hash');
-                parsed.prNum = hoek.reach(payload, 'pullrequest.id');
-                parsed.prRef = hoek.reach(payload, 'pullrequest.source.branch.name');
-
-                return Promise.resolve(parsed);
-            }
-            default:
+        switch (typeHeader) {
+        case 'repo': {
+            if (actionHeader !== 'push') {
                 return Promise.resolve(null);
             }
-        });
+            const changes = hoek.reach(payload, 'push.changes');
+            const link = url.parse(hoek.reach(payload, 'repository.links.html.href'));
+
+            parsed.type = 'repo';
+            parsed.action = 'push';
+            parsed.username = hoek.reach(payload, 'actor.username');
+            parsed.checkoutUrl = `${link.protocol}//${repoOwner}`
+                + `@${link.hostname}${link.pathname}.git`;
+            parsed.branch = hoek.reach(changes[0], 'new.name');
+            parsed.sha = hoek.reach(changes[0], 'new.target.hash');
+            parsed.lastCommitMessage = hoek.reach(changes[0], 'new.target.message',
+                { default: '' });
+
+            return Promise.resolve(parsed);
+        }
+        case 'pullrequest': {
+            if (actionHeader === 'created') {
+                parsed.action = 'opened';
+            } else if (actionHeader === 'updated') {
+                parsed.action = 'synchronized';
+            } else if (actionHeader === 'fullfilled' || actionHeader === 'rejected') {
+                parsed.action = 'closed';
+            } else {
+                return Promise.resolve(null);
+            }
+
+            const link = url.parse(hoek.reach(payload, 'repository.links.html.href'));
+
+            parsed.type = 'pr';
+            parsed.username = hoek.reach(payload, 'actor.username');
+            parsed.checkoutUrl = `${link.protocol}//${repoOwner}`
+                + `@${link.hostname}${link.pathname}.git`;
+            parsed.branch = hoek.reach(payload, 'pullrequest.destination.branch.name');
+            parsed.sha = hoek.reach(payload, 'pullrequest.source.commit.hash');
+            parsed.prNum = hoek.reach(payload, 'pullrequest.id');
+            parsed.prRef = hoek.reach(payload, 'pullrequest.source.branch.name');
+
+            return Promise.resolve(parsed);
+        }
+        default:
+            return Promise.resolve(null);
+        }
     }
 
     /**
@@ -747,14 +746,14 @@ class BitbucketScm extends Scm {
    /**
     * Get an array of scm context (e.g. bitbucket:bitbucket.org)
     * @method getScmContexts
-    * @return {Promise}
+    * @return {Array}
     */
     _getScmContexts() {
         // TODO: return fixed value temporarily.
         // need to change if the other bitbucket scm is supported.
         const contextName = ['bitbucket:bitbucket.org'];
 
-        return Promise.resolve(contextName);
+        return contextName;
     }
 
    /**
