@@ -1616,7 +1616,7 @@ describe('index', function () {
         });
     });
 
-    describe('getScmContext', () => {
+    describe('getScmContexts', () => {
         it('returns a default scmContext', () => (
             scm.getScmContexts().then((result) => {
                 assert.deepEqual(result, ['bitbucket:bitbucket.org']);
