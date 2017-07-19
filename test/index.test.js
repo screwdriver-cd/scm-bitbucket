@@ -1117,11 +1117,13 @@ describe('index', function () {
         it('resolves a default configuration', () =>
             scm.getBellConfiguration().then((config) => {
                 assert.deepEqual(config, {
-                    clientId: 'myclientid',
-                    clientSecret: 'myclientsecret',
-                    forceHttps: false,
-                    isSecure: false,
-                    provider: 'bitbucket'
+                    'bitbucket:bitbucket.org': {
+                        clientId: 'myclientid',
+                        clientSecret: 'myclientsecret',
+                        forceHttps: false,
+                        isSecure: false,
+                        provider: 'bitbucket'
+                    }
                 });
             })
         );
