@@ -745,7 +745,11 @@ class BitbucketScm extends Scm {
      * @param  {Response}    Object          Object containing stats for the scm
      */
     stats() {
-        return this.breaker.stats();
+        const scmContexts = this._getScmContexts();
+        const scmContext = scmContexts[0];
+        const stats = this.breaker.stats();
+
+        return { [scmContext]: stats };
     }
 
    /**

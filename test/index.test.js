@@ -1170,16 +1170,18 @@ describe('index', function () {
     describe('stats', () => {
         it('returns the correct stats', () => {
             assert.deepEqual(scm.stats(), {
-                requests: {
-                    total: 0,
-                    timeouts: 0,
-                    success: 0,
-                    failure: 0,
-                    concurrent: 0,
-                    averageTime: 0
-                },
-                breaker: {
-                    isClosed: true
+                'bitbucket:bitbucket.org': {
+                    requests: {
+                        total: 0,
+                        timeouts: 0,
+                        success: 0,
+                        failure: 0,
+                        concurrent: 0,
+                        averageTime: 0
+                    },
+                    breaker: {
+                        isClosed: true
+                    }
                 }
             });
         });
@@ -1619,11 +1621,11 @@ describe('index', function () {
     });
 
     describe('getScmContexts', () => {
-        it('returns a default scmContext', () => (
-            scm.getScmContexts().then((result) => {
-                assert.deepEqual(result, ['bitbucket:bitbucket.org']);
-            })
-        ));
+        it('returns a default scmContext', () => {
+            const result = scm.getScmContexts();
+
+            return assert.deepEqual(result, ['bitbucket:bitbucket.org']);
+        });
     });
 
     describe('canHandleWebhook', () => {
