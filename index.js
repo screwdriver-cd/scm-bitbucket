@@ -780,7 +780,7 @@ class BitbucketScm extends Scm {
 
         return this._parseHook(headers, payload).then((parseResult) => {
             if (parseResult == null ||
-                parseResult.checkoutUrl.startsWith(checkSshHostname) == null) {
+                parseResult.checkoutUrl.startsWith(checkSshHostname) == false) {
                 return Promise.resolve(false);
             }
 
