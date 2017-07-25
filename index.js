@@ -779,8 +779,8 @@ class BitbucketScm extends Scm {
         const checkSshHostname = `git@${hostname}`;
 
         return this._parseHook(headers, payload).then((parseResult) => {
-            if (parseResult == null ||
-                parseResult.checkoutUrl.startsWith(checkSshHostname) == false) {
+            if (parseResult === null ||
+                parseResult.checkoutUrl.startsWith(checkSshHostname) === false) {
                 return Promise.resolve(false);
             }
 
