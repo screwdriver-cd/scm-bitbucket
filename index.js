@@ -773,15 +773,14 @@ class BitbucketScm extends Scm {
     * @return {Promise}
     * */
     _canHandleWebhook(headers, payload) {
-        return Promise.all([
-            this._getScmContexts(),
-            this._parseHook(headers, payload)
-        ]).then(([scmContexts, parseResult]) => {
-            const scmContext = scmContexts[0];
-            const scmHostName = scmContext.split(':')[1];
-            const regexp = new RegExp(scmHostName);
+        // TODO: return fixed value temporarily.
+        // need to change if the other bitbucket scm is supported.
+        const hostname = 'bitbucket.org';
+        const checkSshHostname = `git@${hostname}`;
 
-            if (parseResult == null || parseResult.checkoutUrl.match(regexp) == null) {
+        return this._parseHook(headers, payload).then((parseResult) => {
+            if (parseResult == null ||
+                parseResult.checkoutUrl.startsWith(checkSshHostname) == null) {
                 return Promise.resolve(false);
             }
 
