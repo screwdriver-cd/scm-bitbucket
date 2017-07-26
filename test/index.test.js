@@ -1123,7 +1123,7 @@ describe('index', function () {
                         forceHttps: false,
                         isSecure: false,
                         provider: 'bitbucket',
-                        cookie: 'bitbucket:bitbucket.org'
+                        cookie: 'bitbucket-bitbucket.org'
                     }
                 });
             })

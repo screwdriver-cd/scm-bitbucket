@@ -25,6 +25,9 @@ const STATE_MAP = {
     ABORTED: 'STOPPED'
 };
 const WEBHOOK_PAGE_SIZE = 30;
+// TODO: set fixed value temporarily.
+// need to change if the other bitbucket host is supported.
+const hostname = 'bitbucket.org';
 
 /**
  * Check the status code of the server's response.
@@ -620,8 +623,7 @@ class BitbucketScm extends Scm {
     _getBellConfiguration() {
         const scmContexts = this._getScmContexts();
         const scmContext = scmContexts[0];
-        // TODO: return fixed value temporarily.
-        const cookie = 'bitbucket:bitbucket.org';
+        const cookie = `bitbucket-${hostname}`;
 
         return Promise.resolve({
             [scmContext]: {
@@ -761,9 +763,7 @@ class BitbucketScm extends Scm {
     * @return {Array}
     */
     _getScmContexts() {
-        // TODO: return fixed value temporarily.
-        // need to change if the other bitbucket scm is supported.
-        const contextName = ['bitbucket:bitbucket.org'];
+        const contextName = [`bitbucket:${hostname}`];
 
         return contextName;
     }
@@ -776,18 +776,14 @@ class BitbucketScm extends Scm {
     * @return {Promise}
     * */
     _canHandleWebhook(headers, payload) {
-        // TODO: return fixed value temporarily.
-        // need to change if the other bitbucket scm is supported.
-        const hostname = 'bitbucket.org';
-        const checkSshHostname = `git@${hostname}`;
-
         return this._parseHook(headers, payload).then((parseResult) => {
-            if (parseResult === null ||
-                parseResult.checkoutUrl.startsWith(checkSshHostname) === false) {
+            if (parseResult === null) {
                 return Promise.resolve(false);
             }
 
-            return Promise.resolve(true);
+            const checkoutUrlHost = parseResult.checkoutUrl.split('@')[1];
+
+            return Promise.resolve(checkoutUrlHost.startsWith(hostname));
         });
     }
 }
