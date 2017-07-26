@@ -31,6 +31,15 @@ const scm = new BitbucketScm({
 
 ### Methods
 
+#### getScmContexts
+
+No parameters are required.
+
+##### Expected Outcome
+
+A single element array of ScmContext(ex: `['bitbucket.org']`), which will be a unique identifier for the scm.
+Since scm-bitbucket supports only 'bitbucket.org' now, this method returns fixed value.
+
 For more information on the exposed methods please see the [scm-base-class].
 
 ## Testing
