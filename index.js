@@ -766,7 +766,7 @@ class BitbucketScm extends Scm {
     }
 
    /**
-    * Determin if a scm module can handle the received webhook
+    * Determine if a scm module can handle the received webhook
     * @method canHandleWebhook
     * @param {Object}    headers     The request headers associated with the webhook payload
     * @param {Object}    payload     The webhook payload received from the SCM service
