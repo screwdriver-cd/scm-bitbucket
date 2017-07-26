@@ -25,9 +25,6 @@ const STATE_MAP = {
     ABORTED: 'STOPPED'
 };
 const WEBHOOK_PAGE_SIZE = 30;
-// TODO: set fixed value temporarily.
-// need to change if the other bitbucket host is supported.
-const hostname = 'bitbucket.org';
 
 /**
  * Check the status code of the server's response.
@@ -114,6 +111,10 @@ class BitbucketScm extends Scm {
         }).unknown(true), 'Invalid config for Bitbucket');
 
         this.breaker = new Fusebox(request, this.config.fusebox);
+
+        // TODO: set fixed value temporarily.
+        // need to change if the other bitbucket host is supported.
+        this.hostname = 'bitbucket.org';
     }
 
     /**
@@ -623,7 +624,7 @@ class BitbucketScm extends Scm {
     _getBellConfiguration() {
         const scmContexts = this._getScmContexts();
         const scmContext = scmContexts[0];
-        const cookie = `bitbucket-${hostname}`;
+        const cookie = `bitbucket-${this.hostname}`;
 
         return Promise.resolve({
             [scmContext]: {
@@ -763,7 +764,7 @@ class BitbucketScm extends Scm {
     * @return {Array}
     */
     _getScmContexts() {
-        const contextName = [`bitbucket:${hostname}`];
+        const contextName = [`bitbucket:${this.hostname}`];
 
         return contextName;
     }
@@ -783,7 +784,7 @@ class BitbucketScm extends Scm {
 
             const checkoutUrlHost = parseResult.checkoutUrl.split('@')[1];
 
-            return Promise.resolve(checkoutUrlHost.startsWith(hostname));
+            return Promise.resolve(checkoutUrlHost.startsWith(this.hostname));
         });
     }
 }
