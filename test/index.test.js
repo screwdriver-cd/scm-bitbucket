@@ -1122,7 +1122,8 @@ describe('index', function () {
                         clientSecret: 'myclientsecret',
                         forceHttps: false,
                         isSecure: false,
-                        provider: 'bitbucket'
+                        provider: 'bitbucket',
+                        cookie: 'bitbucket:bitbucket.org'
                     }
                 });
             })

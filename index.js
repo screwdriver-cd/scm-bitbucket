@@ -620,10 +620,13 @@ class BitbucketScm extends Scm {
     _getBellConfiguration() {
         const scmContexts = this._getScmContexts();
         const scmContext = scmContexts[0];
+        // TODO: return fixed value temporarily.
+        const cookie = 'bitbucket:bitbucket.org';
 
         return Promise.resolve({
             [scmContext]: {
                 provider: 'bitbucket',
+                cookie,
                 clientId: this.config.oauthClientId,
                 clientSecret: this.config.oauthClientSecret,
                 isSecure: this.config.https,
