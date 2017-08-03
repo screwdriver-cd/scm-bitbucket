@@ -49,7 +49,7 @@
     "hoek": "^4.1.0",
     "joi": "^10.0.5",
     "request": "^2.75.0",
-    "screwdriver-data-schema": "^16.9.2",
+    "screwdriver-data-schema": "^17.0.0",
     "screwdriver-scm-base": "^2.5.1"
   }
 }
