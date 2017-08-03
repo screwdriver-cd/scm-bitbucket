@@ -219,6 +219,20 @@ describe('index', function () {
                     assert.match(error.message, 'STATUS CODE 500');
                 });
         });
+
+        it('rejects when passed checkoutUrl of another host', () => {
+            const expectedError =
+                new Error('This checkoutUrl is not supported for your current login host.');
+
+            return scm.parseUrl({
+                checkoutUrl: 'git@bitbucket.corp.jp:batman/test.git#master',
+                token
+            })
+                .then(() => assert.fail('Should not get here'))
+                .catch((error) => {
+                    assert.match(error.message, expectedError.message);
+                });
+        });
     });
 
     describe('parseHook', () => {

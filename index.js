@@ -255,6 +255,11 @@ class BitbucketScm extends Scm {
             }
         };
 
+        if (repoInfo.hostname !== this.hostname) {
+            throw new Error(
+                'This checkoutUrl is not supported for your current login host.');
+        }
+
         return this.breaker.runCommand(options)
             .then((response) => {
                 if (response.statusCode === 404) {
