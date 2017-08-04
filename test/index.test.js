@@ -228,10 +228,10 @@ describe('index', function () {
                 checkoutUrl: 'git@bitbucket.corp.jp:batman/test.git#master',
                 token
             })
-                .then(() => assert.fail('Should not get here'))
-                .catch((error) => {
-                    assert.match(error.message, expectedError.message);
-                });
+            .then(() => assert.fail('Should not get here'))
+            .catch((error) => {
+                assert.match(error.message, expectedError.message);
+            });
         });
     });
 
@@ -1664,7 +1664,7 @@ describe('index', function () {
             headers['x-event-key'] = 'pullrequest:updated';
 
             return scm.canHandleWebhook(headers, testPayloadSync).then((result) => {
-                assert.strictEqual(result, true);
+                assert.isTrue(result);
             });
         });
 
@@ -1672,7 +1672,7 @@ describe('index', function () {
             headers['x-event-key'] = 'pullrequest:fullfilled';
 
             return scm.canHandleWebhook(headers, testPayloadClose).then((result) => {
-                assert.strictEqual(result, true);
+                assert.isTrue(result);
             });
         });
 
@@ -1680,7 +1680,7 @@ describe('index', function () {
             headers['x-event-key'] = 'pullrequest:rejected';
 
             return scm.canHandleWebhook(headers, testPayloadClose).then((result) => {
-                assert.strictEqual(result, true);
+                assert.isTrue(result);
             });
         });
 
@@ -1688,7 +1688,7 @@ describe('index', function () {
             headers['x-event-key'] = 'repo:push';
 
             return scm.canHandleWebhook(headers, testPayloadPush).then((result) => {
-                assert.strictEqual(result, true);
+                assert.isTrue(result);
             });
         });
 
@@ -1696,7 +1696,7 @@ describe('index', function () {
             headers['x-event-key'] = 'issue:created';
 
             return scm.canHandleWebhook(headers, testPayloadPush).then((result) => {
-                assert.strictEqual(result, false);
+                assert.isFalse(result);
             });
         });
 
@@ -1705,7 +1705,7 @@ describe('index', function () {
             testPayloadPush.repository.links.html.href = 'https://github.com/batman/test';
 
             return scm.canHandleWebhook(headers, testPayloadPush).then((result) => {
-                assert.strictEqual(result, false);
+                assert.isFalse(result);
             });
         });
     });
