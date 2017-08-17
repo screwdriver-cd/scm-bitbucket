@@ -247,6 +247,7 @@ describe('index', function () {
                 prNum: 3,
                 prRef: 'mynewbranch',
                 hookId: '1e8d4e8e-5fcf-4624-b091-b10bd6ecaf5e',
+                hostname: 'bitbucket.org',
                 scmContext: 'bitbucket:bitbucket.org'
             };
             const headers = {
@@ -269,6 +270,7 @@ describe('index', function () {
                 prNum: 7,
                 prRef: 'prbranch',
                 hookId: '1e8d4e8e-5fcf-4624-b091-b10bd6ecaf5e',
+                hostname: 'bitbucket.org',
                 scmContext: 'bitbucket:bitbucket.org'
             };
             const headers = {
@@ -291,6 +293,7 @@ describe('index', function () {
                 prNum: 3,
                 prRef: 'mynewbranch',
                 hookId: '1e8d4e8e-5fcf-4624-b091-b10bd6ecaf5e',
+                hostname: 'bitbucket.org',
                 scmContext: 'bitbucket:bitbucket.org'
             };
             const headers = {
@@ -313,6 +316,7 @@ describe('index', function () {
                 prNum: 3,
                 prRef: 'mynewbranch',
                 hookId: '1e8d4e8e-5fcf-4624-b091-b10bd6ecaf5e',
+                hostname: 'bitbucket.org',
                 scmContext: 'bitbucket:bitbucket.org'
             };
             const headers = {
@@ -334,6 +338,7 @@ describe('index', function () {
                 sha: '9ff49b2d1437567cad2b5fed7a0706472131e927',
                 lastCommitMessage: 'testpayload\n',
                 hookId: '1e8d4e8e-5fcf-4624-b091-b10bd6ecaf5e',
+                hostname: 'bitbucket.org',
                 scmContext: 'bitbucket:bitbucket.org'
             };
             const headers = {
