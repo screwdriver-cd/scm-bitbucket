@@ -309,7 +309,6 @@ class BitbucketScm extends Scm {
             parsed.sha = hoek.reach(changes[0], 'new.target.hash');
             parsed.lastCommitMessage = hoek.reach(changes[0], 'new.target.message',
                 { default: '' });
-            parsed.hostname = link.hostname;
 
             return Promise.resolve(parsed);
         }
@@ -334,7 +333,6 @@ class BitbucketScm extends Scm {
             parsed.sha = hoek.reach(payload, 'pullrequest.source.commit.hash');
             parsed.prNum = hoek.reach(payload, 'pullrequest.id');
             parsed.prRef = hoek.reach(payload, 'pullrequest.source.branch.name');
-            parsed.hostname = link.hostname;
 
             return Promise.resolve(parsed);
         }
@@ -789,7 +787,9 @@ class BitbucketScm extends Scm {
                 return Promise.resolve(false);
             }
 
-            return Promise.resolve(parseResult.hostname === this.hostname);
+            const checkoutUrlHost = parseResult.checkoutUrl.split('@')[1];
+
+            return Promise.resolve(checkoutUrlHost.startsWith(this.hostname));
         });
     }
 }
