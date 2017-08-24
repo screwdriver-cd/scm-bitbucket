@@ -790,7 +790,9 @@ class BitbucketScm extends Scm {
             const [, checkoutUrlHost] = parseResult.checkoutUrl.split('@');
 
             return Promise.resolve(checkoutUrlHost.startsWith(this.hostname));
-        });
+        }).catch(() => (
+            Promise.resolve(false)
+        ));
     }
 }
 
