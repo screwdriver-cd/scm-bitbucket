@@ -659,6 +659,9 @@ class BitbucketScm extends Scm {
         const checkoutUrl = `${config.host}/${config.org}/${config.repo}`;
         const sshCheckoutUrl = `git@${config.host}:${config.org}/${config.repo}`;
         const checkoutRef = config.prRef ? config.branch : config.sha;
+        const gitWrapper = '$(if git --version > /dev/null 2>&1; ' +
+            "then echo 'eval'; " +
+            "else echo 'sd-step exec core/git'; fi)";
         const command = [];
 
         // Git clone
@@ -669,20 +672,23 @@ class BitbucketScm extends Scm {
             `then export SCM_URL=https://$SCM_USERNAME:$SCM_ACCESS_TOKEN@${checkoutUrl}; ` +
             `else export SCM_URL=https://${checkoutUrl}; fi`
         );
-        command.push(`git clone --quiet --progress --branch ${config.branch} `
-            + '$SCM_URL $SD_SOURCE_DIR');
+        command.push(`${gitWrapper} `
+            + `"git clone --quiet --progress --branch ${config.branch} $SCM_URL $SD_SOURCE_DIR"`);
         // Reset to Sha
         command.push(`echo Reset to SHA ${checkoutRef}`);
-        command.push(`git reset --hard ${checkoutRef}`);
+        command.push(`${gitWrapper} "git reset --hard ${checkoutRef}"`);
+
         // Set config
         command.push('echo Setting user name and user email');
-        command.push(`git config user.name ${this.config.username}`);
-        command.push(`git config user.email ${this.config.email}`);
+        command.push(`${gitWrapper} "git config user.name ${this.config.username}"`);
+        command.push(`${gitWrapper} "git config user.email ${this.config.email}"`);
 
         if (config.prRef) {
+            const prRef = config.prRef.replace('merge', 'head:pr');
+
             command.push(`echo Fetching PR and merging with ${config.branch}`);
-            command.push(`git fetch origin ${config.prRef}`);
-            command.push(`git merge ${config.sha}`);
+            command.push(`${gitWrapper} "git fetch origin ${prRef}"`);
+            command.push(`${gitWrapper} "git merge --no-edit ${config.sha}"`);
         }
 
         return Promise.resolve({ name: 'sd-checkout-code', command: command.join(' && ') });
