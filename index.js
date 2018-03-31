@@ -1,4 +1,4 @@
-/* eslint no-underscore-dangle: ["error", { "allowAfterThis": true }] */
+/* eslint-disable no-underscore-dangle */
 
 'use strict';
 
@@ -200,7 +200,7 @@ class BitbucketScm extends Scm {
         }
 
         return this.breaker.runCommand(params)
-        .then(checkResponseError);
+            .then(checkResponseError);
     }
 
     /**
@@ -224,14 +224,14 @@ class BitbucketScm extends Scm {
             token: config.token,
             url: config.url
         })
-        .then(hookInfo =>
-            this._createWebhook({
-                hookInfo,
-                repoId: repoInfo.repoId,
-                token: config.token,
-                url: config.url
-            })
-        );
+            .then(hookInfo =>
+                this._createWebhook({
+                    hookInfo,
+                    repoId: repoInfo.repoId,
+                    token: config.token,
+                    url: config.url
+                })
+            );
     }
 
     /**
@@ -376,7 +376,7 @@ class BitbucketScm extends Scm {
             });
     }
 
-   /**
+    /**
     * Decorate a given SCM URI with additional data to better display
     * related information. If a branch suffix is not provided, it will default
     * to the master branch
@@ -489,6 +489,21 @@ class BitbucketScm extends Scm {
 
                 return response.body.target.hash;
             });
+    }
+
+    /**
+     * Bitbucket doesn't have an equivalent endpoint to get the changed files,
+     * so returning null for now
+     * @method getFile
+     * @param  {Object}   config              Configuration
+     * @param  {String}   config.type            Can be 'pr' or 'repo'
+     * @param  {Object}   config.webhookPayload  The webhook payload received from the
+     *                                           SCM service.
+     * @param  {String}   config.token           Service token to authenticate with Github
+     * @return {Promise}                      Resolves to the content of the file
+     */
+    _getChangedFiles() {
+        return Promise.resolve(null);
     }
 
     /**
@@ -621,7 +636,7 @@ class BitbucketScm extends Scm {
             });
     }
 
-   /**
+    /**
     * Return a valid Bell configuration (for OAuth)
     * @method getBellConfiguration
     * @return {Promise}
@@ -643,7 +658,7 @@ class BitbucketScm extends Scm {
         });
     }
 
-   /**
+    /**
     * Checkout the source code from a repository; resolves as an object with checkout commands
     * @method getCheckoutCommand
     * @param  {Object}    config
@@ -769,7 +784,7 @@ class BitbucketScm extends Scm {
         return { [scmContext]: stats };
     }
 
-   /**
+    /**
     * Get an array of scm context (e.g. bitbucket:bitbucket.org)
     * @method getScmContexts
     * @return {Array}
@@ -780,7 +795,7 @@ class BitbucketScm extends Scm {
         return contextName;
     }
 
-   /**
+    /**
     * Determine if a scm module can handle the received webhook
     * @method canHandleWebhook
     * @param {Object}    headers     The request headers associated with the webhook payload

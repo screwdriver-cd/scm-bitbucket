@@ -228,10 +228,21 @@ describe('index', function () {
                 checkoutUrl: 'git@bitbucket.corp.jp:batman/test.git#master',
                 token
             })
-            .then(() => assert.fail('Should not get here'))
-            .catch((error) => {
-                assert.match(error.message, expectedError.message);
-            });
+                .then(() => assert.fail('Should not get here'))
+                .catch((error) => {
+                    assert.match(error.message, expectedError.message);
+                });
+        });
+    });
+
+    describe('getChangedFiles', () => {
+        it('resolves null', () => {
+            scm.getChangedFiles({
+                type: 'pr',
+                payload: testPayloadOpen,
+                token: 'thisisatoken'
+            })
+                .then(result => assert.isNull(result));
         });
     });
 
@@ -1072,7 +1083,7 @@ describe('index', function () {
                     description: 'Screwdriver/123/main'
                 },
                 auth: {
-                    bearer: 'bearerToken'     // Decoded access token
+                    bearer: 'bearerToken' // Decoded access token
                 }
             };
             requestMock.yieldsAsync(null, fakeResponse);
@@ -1228,36 +1239,36 @@ describe('index', function () {
                 token: oauthToken,
                 url: 'url'
             })
-            .then(() => {
-                assert.calledWith(requestMock, {
-                    json: true,
-                    method: 'GET',
-                    auth: {
-                        bearer: oauthToken
-                    },
-                    url: `${API_URL_V2}/repositories/repoId/hooks?pagelen=30&page=1`
+                .then(() => {
+                    assert.calledWith(requestMock, {
+                        json: true,
+                        method: 'GET',
+                        auth: {
+                            bearer: oauthToken
+                        },
+                        url: `${API_URL_V2}/repositories/repoId/hooks?pagelen=30&page=1`
+                    });
+                    assert.calledWith(requestMock, {
+                        body: {
+                            description: 'Screwdriver-CD build trigger',
+                            url: 'url',
+                            active: true,
+                            events: [
+                                'repo:push',
+                                'pullrequest:created',
+                                'pullrequest:fulfilled',
+                                'pullrequest:rejected',
+                                'pullrequest:updated'
+                            ]
+                        },
+                        json: true,
+                        method: 'POST',
+                        auth: {
+                            bearer: oauthToken
+                        },
+                        url: `${API_URL_V2}/repositories/repoId/hooks`
+                    });
                 });
-                assert.calledWith(requestMock, {
-                    body: {
-                        description: 'Screwdriver-CD build trigger',
-                        url: 'url',
-                        active: true,
-                        events: [
-                            'repo:push',
-                            'pullrequest:created',
-                            'pullrequest:fulfilled',
-                            'pullrequest:rejected',
-                            'pullrequest:updated'
-                        ]
-                    },
-                    json: true,
-                    method: 'POST',
-                    auth: {
-                        bearer: oauthToken
-                    },
-                    url: `${API_URL_V2}/repositories/repoId/hooks`
-                });
-            });
         });
 
         it('updates a pre-existing webhook', () => {
@@ -1577,14 +1588,13 @@ describe('index', function () {
                 scmUri,
                 token: oauthToken
             })
-            .then((response) => {
-                assert.calledWith(requestMock, expectedOptions);
-                assert.deepEqual(response, [{
-                    name: 'PR-1',
-                    ref: 'testbranch'
-                }]);
-            }
-            );
+                .then((response) => {
+                    assert.calledWith(requestMock, expectedOptions);
+                    assert.deepEqual(response, [{
+                        name: 'PR-1',
+                        ref: 'testbranch'
+                    }]);
+                });
         });
     });
 
@@ -1623,15 +1633,14 @@ describe('index', function () {
                 token: oauthToken,
                 prNum
             })
-            .then((response) => {
-                assert.calledWith(requestMock, expectedOptions);
-                assert.deepEqual(response, {
-                    name: 'PR-1',
-                    ref: 'testbranch',
-                    sha: 'hashValue'
+                .then((response) => {
+                    assert.calledWith(requestMock, expectedOptions);
+                    assert.deepEqual(response, {
+                        name: 'PR-1',
+                        ref: 'testbranch',
+                        sha: 'hashValue'
+                    });
                 });
-            }
-            );
         });
     });
 
