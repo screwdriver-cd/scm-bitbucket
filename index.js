@@ -377,15 +377,15 @@ class BitbucketScm extends Scm {
     }
 
     /**
-    * Decorate a given SCM URI with additional data to better display
-    * related information. If a branch suffix is not provided, it will default
-    * to the master branch
-    * @method decorateUrl
-    * @param  {Config}    config         Configuration object
-    * @param  {String}    config.scmUri  The scmUri
-    * @param  {String}    config.token   Service token to authenticate with Bitbucket
-    * @return {Object}                   Resolves to a decoratedUrl with url, name, and branch
-    */
+     * Decorate a given SCM URI with additional data to better display
+     * related information. If a branch suffix is not provided, it will default
+     * to the master branch
+     * @method decorateUrl
+     * @param  {Config}    config         Configuration object
+     * @param  {String}    config.scmUri  The scmUri
+     * @param  {String}    config.token   Service token to authenticate with Bitbucket
+     * @return {Object}                   Resolves to a decoratedUrl with url, name, and branch
+     */
     _decorateUrl(config) {
         const scm = getScmUriParts(config.scmUri);
         const options = {
@@ -637,10 +637,10 @@ class BitbucketScm extends Scm {
     }
 
     /**
-    * Return a valid Bell configuration (for OAuth)
-    * @method getBellConfiguration
-    * @return {Promise}
-    */
+     * Return a valid Bell configuration (for OAuth)
+     * @method getBellConfiguration
+     * @return {Promise}
+     */
     _getBellConfiguration() {
         const scmContexts = this._getScmContexts();
         const scmContext = scmContexts[0];
@@ -659,17 +659,17 @@ class BitbucketScm extends Scm {
     }
 
     /**
-    * Checkout the source code from a repository; resolves as an object with checkout commands
-    * @method getCheckoutCommand
-    * @param  {Object}    config
-    * @param  {String}    config.branch        Pipeline branch
-    * @param  {String}    config.host          Scm host to checkout source code from
-    * @param  {String}    config.org           Scm org name
-    * @param  {String}    config.repo          Scm repo name
-    * @param  {String}    config.sha           Commit sha
-    * @param  {String}    [config.prRef]       PR reference (can be a PR branch or reference)
-    * @return {Promise}
-    */
+     * Checkout the source code from a repository; resolves as an object with checkout commands
+     * @method getCheckoutCommand
+     * @param  {Object}    config
+     * @param  {String}    config.branch        Pipeline branch
+     * @param  {String}    config.host          Scm host to checkout source code from
+     * @param  {String}    config.org           Scm org name
+     * @param  {String}    config.repo          Scm repo name
+     * @param  {String}    config.sha           Commit sha
+     * @param  {String}    [config.prRef]       PR reference (can be a PR branch or reference)
+     * @return {Promise}
+     */
     _getCheckoutCommand(config) {
         const checkoutUrl = `${config.host}/${config.org}/${config.repo}`;
         const sshCheckoutUrl = `git@${config.host}:${config.org}/${config.repo}`;
@@ -710,13 +710,13 @@ class BitbucketScm extends Scm {
     }
 
     /**
-    * Get list of objects (each consists of opened PR name and ref (branch)) of a pipeline
-    * @method getOpenedPRs
-    * @param  {Object}   config              Configuration
-    * @param  {String}   config.scmUri       The scmUri to get opened PRs
-    * @param  {String}   config.token        The token used to authenticate to the SCM
-    * @return {Promise}
-    */
+     * Get list of objects (each consists of opened PR name and ref (branch)) of a pipeline
+     * @method getOpenedPRs
+     * @param  {Object}   config              Configuration
+     * @param  {String}   config.scmUri       The scmUri to get opened PRs
+     * @param  {String}   config.token        The token used to authenticate to the SCM
+     * @return {Promise}
+     */
     _getOpenedPRs(config) {
         const repoId = getScmUriParts(config.scmUri).repoId;
 
@@ -740,14 +740,14 @@ class BitbucketScm extends Scm {
     }
 
     /**
-    * Resolve a pull request object based on the config
-    * @method getPrRef
-    * @param  {Object}   config            Configuration
-    * @param  {String}   config.scmUri     The scmUri to get PR info of
-    * @param  {String}   config.token      The token used to authenticate to the SCM
-    * @param  {Integer}  config.prNum      The PR number used to fetch the PR
-    * @return {Promise}
-    */
+     * Resolve a pull request object based on the config
+     * @method getPrRef
+     * @param  {Object}   config            Configuration
+     * @param  {String}   config.scmUri     The scmUri to get PR info of
+     * @param  {String}   config.token      The token used to authenticate to the SCM
+     * @param  {Integer}  config.prNum      The PR number used to fetch the PR
+     * @return {Promise}
+     */
     _getPrInfo(config) {
         const repoId = getScmUriParts(config.scmUri).repoId;
 
@@ -785,10 +785,10 @@ class BitbucketScm extends Scm {
     }
 
     /**
-    * Get an array of scm context (e.g. bitbucket:bitbucket.org)
-    * @method getScmContexts
-    * @return {Array}
-    */
+     * Get an array of scm context (e.g. bitbucket:bitbucket.org)
+     * @method getScmContexts
+     * @return {Array}
+     */
     _getScmContexts() {
         const contextName = [`bitbucket:${this.hostname}`];
 
@@ -796,12 +796,12 @@ class BitbucketScm extends Scm {
     }
 
     /**
-    * Determine if a scm module can handle the received webhook
-    * @method canHandleWebhook
-    * @param {Object}    headers     The request headers associated with the webhook payload
-    * @param {Object}    payload     The webhook payload received from the SCM service
-    * @return {Promise}
-    * */
+     * Determine if a scm module can handle the received webhook
+     * @method canHandleWebhook
+     * @param {Object}    headers     The request headers associated with the webhook payload
+     * @param {Object}    payload     The webhook payload received from the SCM service
+     * @return {Promise}
+     */
     _canHandleWebhook(headers, payload) {
         return this._parseHook(headers, payload).then((parseResult) => {
             if (parseResult === null) {
