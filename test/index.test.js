@@ -1709,6 +1709,16 @@ describe('index', function () {
             });
         });
 
+        it('returns false when an error is thrown', () => {
+            // eslint-disable-next-line no-underscore-dangle
+            scm._parseHook = () => Promise.resolve({});
+
+            return scm.canHandleWebhook(headers, testPayloadPush)
+                .then((result) => {
+                    assert.strictEqual(result, false);
+                });
+        });
+
         it('returns a false when checkoutUrl dose not match scmContext.', () => {
             headers['x-event-key'] = 'repo:push';
             testPayloadPush.repository.links.html.href = 'https://github.com/batman/test';

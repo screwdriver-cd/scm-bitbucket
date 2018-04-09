@@ -36,7 +36,7 @@ const WEBHOOK_PAGE_SIZE = 30;
  * @param  {Number}         response.statusCode                    HTTP status code of the HTTP request
  * @param  {String}         [response.body.error.message]          Error message from the server
  * @param  {String}         [response.body.error.detail.required]  Error resolution message
- * @return {Promise}                                               Resolves when no error encountered.
+ * @return {Promise}                                               Resolves when no error encountered
  *                                                                 Rejects when status code is non-200
  */
 function checkResponseError(response) {
@@ -798,8 +798,8 @@ class BitbucketScm extends Scm {
     /**
      * Determine if a scm module can handle the received webhook
      * @method canHandleWebhook
-     * @param {Object}    headers     The request headers associated with the webhook payload
-     * @param {Object}    payload     The webhook payload received from the SCM service
+     * @param  {Object}    headers     The request headers associated with the webhook payload
+     * @param  {Object}    payload     The webhook payload received from the SCM service
      * @return {Promise}
      */
     _canHandleWebhook(headers, payload) {
