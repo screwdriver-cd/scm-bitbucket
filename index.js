@@ -17,6 +17,7 @@ const MATCH_COMPONENT_HOSTNAME = 1;
 const MATCH_COMPONENT_USER = 2;
 const MATCH_COMPONENT_REPO = 3;
 const MATCH_COMPONENT_BRANCH = 4;
+const BRANCH_PAGE_SIZE = 100;
 const STATE_MAP = {
     SUCCESS: 'SUCCESSFUL',
     RUNNING: 'INPROGRESS',
@@ -815,6 +816,54 @@ class BitbucketScm extends Scm {
         }).catch(() => (
             Promise.resolve(false)
         ));
+    }
+
+    /**
+     * Look up a branches from a repo
+     * @async  _findBranches
+     * @param  {Config}     config
+     * @param  {Object}     config.repoId       The bitbucket repo ID (e.g., "username/repoSlug")
+     * @param  {String}     config.token        Admin Oauth2 token for the repo
+     * @param  {Number}     config.page         pagination: page number to search next. 1-index.
+     * @return {Promise}                        Resolves to a list of branches
+     */
+    async _findBranches(config) {
+        let branches = await this.breaker.runCommand({
+            json: true,
+            method: 'GET',
+            auth: {
+                bearer: config.token
+            },
+            url: `${API_URL_V2}/repositories/${config.repoId}`
+                + `/refs/branches?pagelen=${BRANCH_PAGE_SIZE}&page=${config.page}`
+        });
+
+        if (branches.length === BRANCH_PAGE_SIZE) {
+            config.page += 1;
+            const nextPageBranches = await this._findBranches(config);
+
+            branches = branches.concat(nextPageBranches);
+        }
+
+        return branches;
+    }
+
+    /**
+     * Get branch list from the Github repository
+     * @async  _getBranchList
+     * @param  {Object}     config
+     * @param  {String}     config.scmUri      The SCM URI to get branch list
+     * @param  {String}     config.token       Service token to authenticate with Github
+     * @return {Promise}                       Resolves when complete
+     */
+    async _getBranchList(config) {
+        const repoInfo = getScmUriParts(config.scmUri);
+
+        return this._findBranches({
+            repoId: repoInfo.repoId,
+            page: 1,
+            token: config.token
+        });
     }
 }
 

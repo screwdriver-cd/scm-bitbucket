@@ -1739,4 +1739,65 @@ describe('index', function () {
             });
         });
     });
+
+    describe('getBranchList', () => {
+        const branchListConfig = {
+            scmUri: 'hostName:repoId:branchName',
+            token: 'oauthToken'
+        };
+
+        beforeEach(() => {
+            requestMock.yieldsAsync(null, {
+                statusCode: 200
+            });
+        });
+
+        it('get branches', () => {
+            requestMock.onFirstCall().yieldsAsync(null, {
+                body: {
+                    values: [],
+                    size: 0
+                },
+                statusCode: 200
+            });
+            scm.getBranchList(branchListConfig).then(() => {
+                assert.calledWith(requestMock, {
+                    json: true,
+                    method: 'GET',
+                    auth: {
+                        bearer: branchListConfig.token
+                    },
+                    url: `${API_URL_V2}/repositories/repoId/refs/branches?pagelen=100&page=1`
+                });
+            });
+        });
+
+        it('get a lot of branches', (done) => {
+            const fakeBranches = [];
+
+            for (let i = 0; i < 300; i += 1) {
+                fakeBranches.push({
+                    name: `master${i}`
+                });
+            }
+            requestMock.onCall(0).yieldsAsync(null, fakeBranches.slice(0, 100));
+            requestMock.onCall(1).yieldsAsync(null, fakeBranches.slice(100, 200));
+            requestMock.onCall(2).yieldsAsync(null, fakeBranches.slice(200, 300));
+            requestMock.onCall(3).yieldsAsync(null, []);
+            scm.getBranchList(branchListConfig).then((branches) => {
+                assert.equal(branches.length, 300);
+                done();
+            }).catch(done);
+        });
+
+        it('throws an error when failing to getBranches', () => {
+            const testError = new Error('getBranchesError');
+
+            requestMock.yieldsAsync(testError);
+
+            return scm.getBranchList(branchListConfig).then(assert.fail, (err) => {
+                assert.equal(err, testError);
+            });
+        });
+    });
 });
