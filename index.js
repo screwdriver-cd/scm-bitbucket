@@ -828,7 +828,7 @@ class BitbucketScm extends Scm {
      * @return {Promise}                        Resolves to a list of branches
      */
     async _findBranches(config) {
-        let branches = await this.breaker.runCommand({
+        const response = await this.breaker.runCommand({
             json: true,
             method: 'GET',
             auth: {
@@ -838,6 +838,8 @@ class BitbucketScm extends Scm {
                 + `/refs/branches?pagelen=${BRANCH_PAGE_SIZE}&page=${config.page}`
         });
 
+        let branches = hoek.reach(response, 'body.values');
+
         if (branches.length === BRANCH_PAGE_SIZE) {
             config.page += 1;
             const nextPageBranches = await this._findBranches(config);
@@ -845,7 +847,15 @@ class BitbucketScm extends Scm {
             branches = branches.concat(nextPageBranches);
         }
 
-        return branches;
+        const branchInfos = [];
+
+        branches.forEach((branch) => {
+            branchInfos.push({
+                name: hoek.reach(branch, 'name')
+            });
+        });
+
+        return branchInfos;
     }
 
     /**

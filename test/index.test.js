@@ -1748,7 +1748,10 @@ describe('index', function () {
 
         beforeEach(() => {
             requestMock.yieldsAsync(null, {
-                statusCode: 200
+                statusCode: 200,
+                body: {
+                    values: []
+                }
             });
         });
 
@@ -1775,15 +1778,30 @@ describe('index', function () {
         it('get a lot of branches', (done) => {
             const fakeBranches = [];
 
-            for (let i = 0; i < 300; i += 1) {
+            for (let i = 0; i < 100; i += 1) {
                 fakeBranches.push({
                     name: `master${i}`
                 });
             }
-            requestMock.onCall(0).yieldsAsync(null, fakeBranches.slice(0, 100));
-            requestMock.onCall(1).yieldsAsync(null, fakeBranches.slice(100, 200));
-            requestMock.onCall(2).yieldsAsync(null, fakeBranches.slice(200, 300));
-            requestMock.onCall(3).yieldsAsync(null, []);
+
+            const fakeResponse = {
+                statusCode: 200,
+                body: {
+                    values: fakeBranches
+                }
+            };
+
+            const fakeResponseEmpty = {
+                statusCode: 200,
+                body: {
+                    values: []
+                }
+            };
+
+            requestMock.onCall(0).yieldsAsync(null, fakeResponse, fakeResponse.body);
+            requestMock.onCall(1).yieldsAsync(null, fakeResponse, fakeResponse.body);
+            requestMock.onCall(2).yieldsAsync(null, fakeResponse, fakeResponse.body);
+            requestMock.onCall(3).yieldsAsync(null, fakeResponseEmpty, fakeResponseEmpty.body);
             scm.getBranchList(branchListConfig).then((branches) => {
                 assert.equal(branches.length, 300);
                 done();
