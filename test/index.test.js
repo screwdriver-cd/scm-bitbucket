@@ -1755,7 +1755,7 @@ describe('index', function () {
             });
         });
 
-        it('get branches', () => {
+        it('gets branches', (done) => {
             requestMock.onFirstCall().yieldsAsync(null, {
                 body: {
                     values: [],
@@ -1772,10 +1772,11 @@ describe('index', function () {
                     },
                     url: `${API_URL_V2}/repositories/repoId/refs/branches?pagelen=100&page=1`
                 });
-            });
+                done();
+            }).catch(done);
         });
 
-        it('get a lot of branches', (done) => {
+        it('gets a lot of branches', (done) => {
             const fakeBranches = [];
 
             for (let i = 0; i < 100; i += 1) {

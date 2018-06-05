@@ -821,7 +821,7 @@ class BitbucketScm extends Scm {
     /**
      * Look up a branches from a repo
      * @async  _findBranches
-     * @param  {Config}     config
+     * @param  {Object}     config
      * @param  {Object}     config.repoId       The bitbucket repo ID (e.g., "username/repoSlug")
      * @param  {String}     config.token        Admin Oauth2 token for the repo
      * @param  {Number}     config.page         pagination: page number to search next. 1-index.
@@ -847,15 +847,7 @@ class BitbucketScm extends Scm {
             branches = branches.concat(nextPageBranches);
         }
 
-        const branchInfos = [];
-
-        branches.forEach((branch) => {
-            branchInfos.push({
-                name: hoek.reach(branch, 'name')
-            });
-        });
-
-        return branchInfos;
+        return branches.map(branch => ({ name: hoek.reach(branch, 'name') }));
     }
 
     /**
