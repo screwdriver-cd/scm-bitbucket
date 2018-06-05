@@ -822,7 +822,7 @@ class BitbucketScm extends Scm {
      * Look up a branches from a repo
      * @async  _findBranches
      * @param  {Object}     config
-     * @param  {Object}     config.repoId       The bitbucket repo ID (e.g., "username/repoSlug")
+     * @param  {String}     config.repoId       The bitbucket repo ID (e.g., "username/repoSlug")
      * @param  {String}     config.token        Admin Oauth2 token for the repo
      * @param  {Number}     config.page         pagination: page number to search next. 1-index.
      * @return {Promise}                        Resolves to a list of branches
