@@ -1758,12 +1758,12 @@ describe('index', function () {
         it('gets branches', (done) => {
             requestMock.onFirstCall().yieldsAsync(null, {
                 body: {
-                    values: [],
-                    size: 0
+                    values: [{ name: 'master' }],
+                    size: 1
                 },
                 statusCode: 200
             });
-            scm.getBranchList(branchListConfig).then(() => {
+            scm.getBranchList(branchListConfig).then((b) => {
                 assert.calledWith(requestMock, {
                     json: true,
                     method: 'GET',
@@ -1772,6 +1772,7 @@ describe('index', function () {
                     },
                     url: `${API_URL_V2}/repositories/repoId/refs/branches?pagelen=100&page=1`
                 });
+                assert.deepEqual(b, [{ name: 'master' }]);
                 done();
             }).catch(done);
         });
