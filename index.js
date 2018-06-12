@@ -663,12 +663,13 @@ class BitbucketScm extends Scm {
      * Checkout the source code from a repository; resolves as an object with checkout commands
      * @method getCheckoutCommand
      * @param  {Object}    config
-     * @param  {String}    config.branch        Pipeline branch
-     * @param  {String}    config.host          Scm host to checkout source code from
-     * @param  {String}    config.org           Scm org name
-     * @param  {String}    config.repo          Scm repo name
-     * @param  {String}    config.sha           Commit sha
-     * @param  {String}    [config.prRef]       PR reference (can be a PR branch or reference)
+     * @param  {String}    config.branch         Pipeline branch
+     * @param  {String}    config.host           Scm host to checkout source code from
+     * @param  {String}    config.org            Scm org name
+     * @param  {String}    config.repo           Scm repo name
+     * @param  {String}    config.sha            Commit sha
+     * @param  {String}    [config.commitBranch] Commit branch
+     * @param  {String}    [config.prRef]        PR reference (can be a PR branch or reference)
      * @return {Promise}
      */
     _getCheckoutCommand(config) {
