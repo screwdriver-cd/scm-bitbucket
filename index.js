@@ -674,14 +674,15 @@ class BitbucketScm extends Scm {
     _getCheckoutCommand(config) {
         const checkoutUrl = `${config.host}/${config.org}/${config.repo}`;
         const sshCheckoutUrl = `git@${config.host}:${config.org}/${config.repo}`;
-        const checkoutRef = config.prRef ? config.branch : config.sha;
+        const branch = config.commitBranch ? config.commitBranch : config.branch;
+        const checkoutRef = config.prRef ? branch : config.sha;
         const gitWrapper = '$(if git --version > /dev/null 2>&1; ' +
             "then echo 'eval'; " +
             "else echo 'sd-step exec core/git'; fi)";
         const command = [];
 
         // Git clone
-        command.push(`echo Cloning ${checkoutUrl}, on branch ${config.branch}`);
+        command.push(`echo Cloning ${checkoutUrl}, on branch ${branch}`);
         command.push('if [ ! -z $SCM_CLONE_TYPE ] && [ $SCM_CLONE_TYPE = ssh ]; ' +
             `then export SCM_URL=${sshCheckoutUrl}; ` +
             'elif [ ! -z $SCM_USERNAME ] && [ ! -z $SCM_ACCESS_TOKEN ]; ' +
@@ -689,7 +690,7 @@ class BitbucketScm extends Scm {
             `else export SCM_URL=https://${checkoutUrl}; fi`
         );
         command.push(`${gitWrapper} `
-            + `"git clone --quiet --progress --branch ${config.branch} $SCM_URL $SD_SOURCE_DIR"`);
+            + `"git clone --quiet --progress --branch ${branch} $SCM_URL $SD_SOURCE_DIR"`);
         // Reset to Sha
         command.push(`echo Reset to SHA ${checkoutRef}`);
         command.push(`${gitWrapper} "git reset --hard ${checkoutRef}"`);
@@ -702,7 +703,7 @@ class BitbucketScm extends Scm {
         if (config.prRef) {
             const prRef = config.prRef.replace('merge', 'head:pr');
 
-            command.push(`echo Fetching PR and merging with ${config.branch}`);
+            command.push(`echo Fetching PR and merging with ${branch}`);
             command.push(`${gitWrapper} "git fetch origin ${prRef}"`);
             command.push(`${gitWrapper} "git merge --no-edit ${config.sha}"`);
         }

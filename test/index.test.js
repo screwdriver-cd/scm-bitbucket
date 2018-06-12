@@ -6,6 +6,7 @@ const sinon = require('sinon');
 const testCommands = require('./data/commands.json');
 const testPrCommands = require('./data/prCommands.json');
 const testCustomPrCommands = require('./data/customPrCommands.json');
+const testCommitBranchCommands = require('./data/commitBranchCommands.json');
 const testPayloadOpen = require('./data/pr.opened.json');
 const testPayloadSync = require('./data/pr.sync.json');
 const testPayloadClose = require('./data/pr.closed.json');
@@ -1195,6 +1196,15 @@ describe('index', function () {
                 .then((command) => {
                     assert.deepEqual(command, testCustomPrCommands);
                 });
+        });
+
+        it('resolves checkout command without prRef', () => {
+            config.commitBranch = 'commitBranch';
+            config.prRef = undefined;
+
+            return scm.getCheckoutCommand(config).then((command) => {
+                assert.deepEqual(command, testCommitBranchCommands);
+            });
         });
     });
 
