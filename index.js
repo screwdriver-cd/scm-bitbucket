@@ -737,6 +737,9 @@ class BitbucketScm extends Scm {
             command.push(`echo Fetching PR and merging with ${branch}`);
             command.push(`${gitWrapper} "git fetch origin ${prRef}"`);
             command.push(`${gitWrapper} "git merge --no-edit ${config.sha}"`);
+            // Init & Update submodule
+            command.push(`${gitWrapper} "git submodule init"`);
+            command.push(`${gitWrapper} "git submodule update --recursive"`);
         }
 
         return Promise.resolve({ name: 'sd-checkout-code', command: command.join(' && ') });
