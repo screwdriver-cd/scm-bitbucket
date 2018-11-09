@@ -721,8 +721,8 @@ class BitbucketScm extends Scm {
                   + `"git clone --recursive --quiet --progress --branch ${parentBranch} `
                   + '$CONFIG_URL $SD_CONFIG_DIR"; '
                   + `else ${gitWrapper} `
-                  + `"git clone --depth=50 --recursive --quiet --progress --branch ${parentBranch} `
-                  + '$CONFIG_URL $SD_CONFIG_DIR"; fi');
+                  + '"git clone --depth=50 --no-single-branch --recursive --quiet --progress '
+                  + `--branch ${parentBranch} $CONFIG_URL $SD_CONFIG_DIR"; fi`);
 
             // Reset to SHA
             command.push(`${gitWrapper} "git -C $SD_CONFIG_DIR reset --hard `
@@ -743,8 +743,8 @@ class BitbucketScm extends Scm {
               + `"git clone --recursive --quiet --progress --branch ${branch} `
               + '$SCM_URL $SD_SOURCE_DIR"; '
               + `else ${gitWrapper} `
-              + `"git clone --depth=50 --recursive --quiet --progress --branch ${branch} `
-              + '$SCM_URL $SD_SOURCE_DIR"; fi');
+              + '"git clone --depth=50 --no-single-branch --recursive --quiet --progress '
+              + `--branch ${branch} $SCM_URL $SD_SOURCE_DIR"; fi`);
         // Reset to Sha
         command.push(`echo Reset to SHA ${checkoutRef}`);
         command.push(`${gitWrapper} "git reset --hard ${checkoutRef}"`);
