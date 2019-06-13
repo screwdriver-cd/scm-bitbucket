@@ -290,7 +290,7 @@ class BitbucketScm extends Scm {
     _parseHook(headers, payload) {
         const [typeHeader, actionHeader] = headers['x-event-key'].split(':');
         const parsed = {};
-        const repoOwner = hoek.reach(payload, 'repository.owner.username');
+        const repoOwner = hoek.reach(payload, 'repository.owner.uuid');
         const scmContexts = this._getScmContexts();
 
         parsed.hookId = headers['x-request-uuid'];
@@ -306,8 +306,8 @@ class BitbucketScm extends Scm {
 
             parsed.type = 'repo';
             parsed.action = 'push';
-            parsed.username = hoek.reach(payload, 'actor.username');
-            parsed.checkoutUrl = `${link.protocol}//${repoOwner}`
+            parsed.username = hoek.reach(payload, 'actor.uuid');
+            parsed.checkoutUrl = `${link.protocol}//${encodeURIComponent(repoOwner)}`
                 + `@${link.hostname}${link.pathname}.git`;
             parsed.branch = hoek.reach(changes[0], 'new.name');
             parsed.sha = hoek.reach(changes[0], 'new.target.hash');
@@ -330,8 +330,8 @@ class BitbucketScm extends Scm {
             const link = url.parse(hoek.reach(payload, 'repository.links.html.href'));
 
             parsed.type = 'pr';
-            parsed.username = hoek.reach(payload, 'actor.username');
-            parsed.checkoutUrl = `${link.protocol}//${repoOwner}`
+            parsed.username = hoek.reach(payload, 'actor.uuid');
+            parsed.checkoutUrl = `${link.protocol}//${encodeURIComponent(repoOwner)}`
                 + `@${link.hostname}${link.pathname}.git`;
             parsed.branch = hoek.reach(payload, 'pullrequest.destination.branch.name');
             parsed.sha = hoek.reach(payload, 'pullrequest.source.commit.hash');

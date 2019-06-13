@@ -252,8 +252,8 @@ describe('index', function () {
             const expected = {
                 type: 'pr',
                 action: 'opened',
-                username: 'robin',
-                checkoutUrl: 'https://batman@bitbucket.org/batman/test.git',
+                username: '{2dca4f54-ab3f-400c-a777-c059e1ac0394}',
+                checkoutUrl: 'https://%7B2dca4f54-ab3f-400c-a777-c059e1ac0394%7D@bitbucket.org/batman/test.git', // eslint-disable-line max-len
                 branch: 'master',
                 sha: '40171b678527',
                 prNum: 3,
@@ -274,8 +274,8 @@ describe('index', function () {
             const expected = {
                 type: 'pr',
                 action: 'synchronized',
-                username: 'batman',
-                checkoutUrl: 'https://batman@bitbucket.org/batman/test.git',
+                username: '{2dca4f54-ab3f-400c-a777-c059e1ac0394}',
+                checkoutUrl: 'https://%7B2dca4f54-ab3f-400c-a777-c059e1ac0394%7D@bitbucket.org/batman/test.git', // eslint-disable-line max-len
                 branch: 'master',
                 sha: 'caeae8cd5fc9',
                 prNum: 7,
@@ -296,8 +296,8 @@ describe('index', function () {
             const expected = {
                 type: 'pr',
                 action: 'closed',
-                username: 'robin',
-                checkoutUrl: 'https://batman@bitbucket.org/batman/test.git',
+                username: '{2dca4f54-ab3f-400c-a777-c059e1ac0394}',
+                checkoutUrl: 'https://%7B2dca4f54-ab3f-400c-a777-c059e1ac0394%7D@bitbucket.org/batman/test.git', // eslint-disable-line max-len
                 branch: 'master',
                 sha: '40171b678527',
                 prNum: 3,
@@ -318,8 +318,8 @@ describe('index', function () {
             const expected = {
                 type: 'pr',
                 action: 'closed',
-                username: 'robin',
-                checkoutUrl: 'https://batman@bitbucket.org/batman/test.git',
+                username: '{2dca4f54-ab3f-400c-a777-c059e1ac0394}',
+                checkoutUrl: 'https://%7B2dca4f54-ab3f-400c-a777-c059e1ac0394%7D@bitbucket.org/batman/test.git', // eslint-disable-line max-len
                 branch: 'master',
                 sha: '40171b678527',
                 prNum: 3,
@@ -340,8 +340,8 @@ describe('index', function () {
             const expected = {
                 type: 'repo',
                 action: 'push',
-                username: 'robin',
-                checkoutUrl: 'https://batman@bitbucket.org/batman/test.git',
+                username: '{2dca4f54-ab3f-400c-a777-c059e1ac0394}',
+                checkoutUrl: 'https://%7B2dca4f54-ab3f-400c-a777-c059e1ac0394%7D@bitbucket.org/batman/test.git', // eslint-disable-line max-len
                 branch: 'stuff',
                 sha: '9ff49b2d1437567cad2b5fed7a0706472131e927',
                 lastCommitMessage: 'testpayload\n',
