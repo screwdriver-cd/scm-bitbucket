@@ -386,7 +386,7 @@ describe('index', function () {
     });
 
     describe('decorateAuthor', () => {
-        const apiUrl = `${API_URL_V2}/users/batman`;
+        const apiUrl = `${API_URL_V2}/users/%7B4f1a9b7f-586e-4e80-b9eb-a7589b4a165f%7D`;
         const expectedOptions = {
             url: apiUrl,
             method: 'GET',
@@ -401,12 +401,11 @@ describe('index', function () {
             fakeResponse = {
                 statusCode: 200,
                 body: {
-                    username: 'batman',
                     display_name: 'Batman',
                     uuid: '{4f1a9b7f-586e-4e80-b9eb-a7589b4a165f}',
                     links: {
                         html: {
-                            href: 'https://bitbucket.org/batman/'
+                            href: 'https://bitbucket.org/%7B4f1a9b7f-586e-4e80-b9eb-a7589b4a165f%7D/' // eslint-disable-line max-len
                         },
                         avatar: {
                             href: 'https://bitbucket.org/account/batman/avatar/32/'
@@ -419,14 +418,14 @@ describe('index', function () {
 
         it('resolves to correct decorated author', () => {
             const expected = {
-                url: 'https://bitbucket.org/batman/',
+                url: 'https://bitbucket.org/%7B4f1a9b7f-586e-4e80-b9eb-a7589b4a165f%7D/',
                 name: 'Batman',
-                username: 'batman',
+                username: '{4f1a9b7f-586e-4e80-b9eb-a7589b4a165f}',
                 avatar: 'https://bitbucket.org/account/batman/avatar/32/'
             };
 
             return scm.decorateAuthor({
-                username: 'batman',
+                username: '{4f1a9b7f-586e-4e80-b9eb-a7589b4a165f}',
                 token
             }).then((decorated) => {
                 assert.calledWith(requestMock, expectedOptions);
@@ -448,7 +447,7 @@ describe('index', function () {
             requestMock.yieldsAsync(null, fakeResponse, fakeResponse.body);
 
             return scm.decorateAuthor({
-                username: 'batman',
+                username: '{4f1a9b7f-586e-4e80-b9eb-a7589b4a165f}',
                 token
             }).then(() => {
                 assert.fail('Should not get here');
@@ -464,7 +463,7 @@ describe('index', function () {
             requestMock.yieldsAsync(err);
 
             return scm.decorateAuthor({
-                username: 'batman',
+                username: '{4f1a9b7f-586e-4e80-b9eb-a7589b4a165f}',
                 token
             }).then(() => {
                 assert.fail('Should not get here');
@@ -574,7 +573,7 @@ describe('index', function () {
         const sha = '1111111111111111111111111111111111111111';
         const repoUrl =
             `${API_URL_V2}/repositories/repoId/commit/${sha}`;
-        const authorUrl = `${API_URL_V2}/users/username`;
+        const authorUrl = `${API_URL_V2}/users/%7Buuid%7D`;
         const selfLink = `https://bitbucket.org/repoId/commits/${sha}`;
         const repoOptions = {
             url: repoUrl,
@@ -607,7 +606,7 @@ describe('index', function () {
                     },
                     author: {
                         user: {
-                            username: 'username'
+                            uuid: '{uuid}'
                         }
                     }
                 }
@@ -615,15 +614,14 @@ describe('index', function () {
             fakeAuthorResponse = {
                 statusCode: 200,
                 body: {
-                    username: 'username',
                     display_name: 'displayName',
-                    uuid: 'uuid',
+                    uuid: '{uuid}',
                     links: {
                         html: {
-                            href: 'https://bitbucket.org/username/'
+                            href: 'https://bitbucket.org/%7Buuid%7D/'
                         },
                         avatar: {
-                            href: 'https://bitbucket.org/account/username/avatar/32/'
+                            href: 'https://bitbucket.org/account/%7Buuid%7D/avatar/32/'
                         }
                     }
                 }
@@ -639,10 +637,10 @@ describe('index', function () {
                 url: selfLink,
                 message: 'testing',
                 author: {
-                    url: 'https://bitbucket.org/username/',
+                    url: 'https://bitbucket.org/%7Buuid%7D/',
                     name: 'displayName',
-                    username: 'username',
-                    avatar: 'https://bitbucket.org/account/username/avatar/32/'
+                    username: '{uuid}',
+                    avatar: 'https://bitbucket.org/account/%7Buuid%7D/avatar/32/'
                 }
             };
 

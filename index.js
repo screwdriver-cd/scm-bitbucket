@@ -355,7 +355,7 @@ class BitbucketScm extends Scm {
      */
     _decorateAuthor(config) {
         const options = {
-            url: `${USER_URL}/${config.username}`,
+            url: `${USER_URL}/${encodeURIComponent(config.username)}`,
             method: 'GET',
             json: true,
             auth: {
@@ -374,7 +374,7 @@ class BitbucketScm extends Scm {
                 return {
                     url: body.links.html.href,
                     name: body.display_name,
-                    username: body.username,
+                    username: body.uuid,
                     avatar: body.links.avatar.href
                 };
             });
@@ -448,7 +448,7 @@ class BitbucketScm extends Scm {
 
                 // eslint-disable-next-line
                 return this._decorateAuthor({
-                    username: body.author.user.username,
+                    username: body.author.user.uuid,
                     token: config.token
                 }).then(author => ({
                     url: body.links.html.href,
