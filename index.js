@@ -2,7 +2,7 @@
 
 'use strict';
 
-const Fusebox = require('circuit-fuses');
+const Fusebox = require('circuit-fuses').breaker;
 const Scm = require('screwdriver-scm-base');
 const hoek = require('hoek');
 const joi = require('joi');
