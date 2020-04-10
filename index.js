@@ -742,7 +742,7 @@ class BitbucketScm extends Scm {
         }
 
         // Git clone
-        command.push(`echo Cloning ${checkoutUrl}, on branch ${branch}`);
+        command.push(`echo 'Cloning ${checkoutUrl}, on branch ${branch}'`);
         command.push('if [ ! -z $SCM_CLONE_TYPE ] && [ $SCM_CLONE_TYPE = ssh ]; ' +
             `then export SCM_URL=${sshCheckoutUrl}; ` +
             'elif [ ! -z $SCM_USERNAME ] && [ ! -z $SCM_ACCESS_TOKEN ]; ' +
@@ -751,14 +751,14 @@ class BitbucketScm extends Scm {
         );
         command.push('if [ ! -z $GIT_SHALLOW_CLONE ] && [ $GIT_SHALLOW_CLONE = false ]; '
               + `then ${gitWrapper} `
-              + `"git clone --recursive --quiet --progress --branch ${branch} `
+              + `"git clone --recursive --quiet --progress --branch '${branch}' `
               + '$SCM_URL $SD_SOURCE_DIR"; '
               + `else ${gitWrapper} `
               + '"git clone --depth=50 --no-single-branch --recursive --quiet --progress '
-              + `--branch ${branch} $SCM_URL $SD_SOURCE_DIR"; fi`);
+              + `--branch '${branch}' $SCM_URL $SD_SOURCE_DIR"; fi`);
         // Reset to Sha
-        command.push(`echo Reset to SHA ${checkoutRef}`);
-        command.push(`${gitWrapper} "git reset --hard ${checkoutRef}"`);
+        command.push(`echo 'Reset to SHA ${checkoutRef}'`);
+        command.push(`${gitWrapper} "git reset --hard '${checkoutRef}'"`);
 
         // Set config
         command.push('echo Setting user name and user email');
@@ -768,7 +768,7 @@ class BitbucketScm extends Scm {
         if (config.prRef) {
             const prRef = config.prRef.replace('merge', 'head:pr');
 
-            command.push(`echo Fetching PR and merging with ${branch}`);
+            command.push(`echo 'Fetching PR and merging with ${branch}'`);
             command.push(`${gitWrapper} "git fetch origin ${prRef}"`);
             command.push(`${gitWrapper} "git merge --no-edit ${config.sha}"`);
             // Init & Update submodule
