@@ -726,14 +726,14 @@ class BitbucketScm extends Scm {
             command.push(`export SD_CONFIG_DIR=${externalConfigDir}`);
 
             // Git clone
-            command.push(`echo Cloning external config repo ${parentCheckoutUrl}`);
+            command.push(`echo 'Cloning external config repo ${parentCheckoutUrl}'`);
             command.push('if [ ! -z $GIT_SHALLOW_CLONE ] && [ $GIT_SHALLOW_CLONE = false ]; '
                   + `then ${gitWrapper} `
-                  + `"git clone --recursive --quiet --progress --branch ${parentBranch} `
+                  + `"git clone --recursive --quiet --progress --branch '${parentBranch}' `
                   + '$CONFIG_URL $SD_CONFIG_DIR"; '
                   + `else ${gitWrapper} `
                   + '"git clone --depth=50 --no-single-branch --recursive --quiet --progress '
-                  + `--branch ${parentBranch} $CONFIG_URL $SD_CONFIG_DIR"; fi`);
+                  + `--branch '${parentBranch}' $CONFIG_URL $SD_CONFIG_DIR"; fi`);
 
             // Reset to SHA
             command.push(`${gitWrapper} "git -C $SD_CONFIG_DIR reset --hard `
