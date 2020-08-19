@@ -151,6 +151,28 @@ describe('index', function () {
             });
         });
 
+        it('resolves to the correct parsed url for ssh wtih default branch', () => {
+            const expected =
+                'bitbucket.org:batman/{de7d7695-1196-46a1-b87d-371b7b2945ab}:master';
+
+            expectedOptions = {
+                url: `${apiUrl}/master`,
+                method: 'GET',
+                json: true,
+                auth: {
+                    bearer: systemToken
+                }
+            };
+
+            return scm.parseUrl({
+                checkoutUrl: 'git@bitbucket.org:batman/test.git',
+                token
+            }).then((parsed) => {
+                assert.calledWith(requestMock, expectedOptions);
+                assert.equal(parsed, expected);
+            });
+        });
+
         it('resolves to the correct parsed url for https', () => {
             const expected =
                 'bitbucket.org:batman/{de7d7695-1196-46a1-b87d-371b7b2945ab}:mynewbranch';

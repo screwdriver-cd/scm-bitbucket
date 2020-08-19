@@ -39,7 +39,7 @@
     "chai": "^4.2.0",
     "eslint": "^4.19.1",
     "eslint-config-screwdriver": "^3.0.1",
-    "jenkins-mocha": "^6.0.0",
+    "jenkins-mocha": "^8.0.0",
     "mockery": "^2.0.0",
     "sinon": "^4.5.0"
   },
@@ -48,7 +48,7 @@
     "hoek": "^5.0.4",
     "joi": "^13.7.0",
     "request": "^2.88.0",
-    "screwdriver-data-schema": "^18.38.0",
+    "screwdriver-data-schema": "^19.12.1",
     "screwdriver-scm-base": "^4.0.5"
   }
 }
