@@ -70,7 +70,7 @@ function getRepoInfo(checkoutUrl) {
     return {
         hostname: matched[MATCH_COMPONENT_HOSTNAME],
         repo: matched[MATCH_COMPONENT_REPO],
-        branch: matched[MATCH_COMPONENT_BRANCH].slice(1),
+        branch: matched[MATCH_COMPONENT_BRANCH] ? matched[MATCH_COMPONENT_BRANCH].slice(1) : null,
         username: matched[MATCH_COMPONENT_USER]
     };
 }
@@ -259,8 +259,11 @@ class BitbucketScm extends Scm {
      */
     async _parseUrl(config) {
         const repoInfo = getRepoInfo(config.checkoutUrl);
+        // TODO: add logic to fetch default branch
+        // See https://jira.atlassian.com/browse/BCLOUD-20212
+        const branch = repoInfo.branch || 'master';
         const branchUrl =
-            `${REPO_URL}/${repoInfo.username}/${repoInfo.repo}/refs/branches/${repoInfo.branch}`;
+            `${REPO_URL}/${repoInfo.username}/${repoInfo.repo}/refs/branches/${branch}`;
         const token = await this._getToken();
 
         const options = {
@@ -288,7 +291,7 @@ class BitbucketScm extends Scm {
         }
 
         return `${repoInfo.hostname}:${repoInfo.username}` +
-            `/${response.body.target.repository.uuid}:${repoInfo.branch}`;
+            `/${response.body.target.repository.uuid}:${branch}`;
     }
 
     /**
