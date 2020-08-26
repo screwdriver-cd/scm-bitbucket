@@ -4,7 +4,7 @@
 
 const Fusebox = require('circuit-fuses').breaker;
 const Scm = require('screwdriver-scm-base');
-const hoek = require('hoek');
+const hoek = require('@hapi/hoek');
 const joi = require('joi');
 const url = require('url');
 const request = require('request');

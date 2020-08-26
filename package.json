@@ -1,11 +1,11 @@
 {
   "name": "screwdriver-scm-bitbucket",
-  "version": "2.3.0",
+  "version": "4.0.0",
   "description": "This scm plugin extends the [scm-base-class](https://github.com/screwdriver-cd/scm-base), and provides methods to fetch and update data in Bitbucket.",
   "main": "index.js",
   "scripts": {
     "pretest": "eslint .",
-    "test": "jenkins-mocha --recursive",
+    "test": "mocha --recursive",
     "semantic-release": "semantic-release pre && npm publish && semantic-release post"
   },
   "repository": {
@@ -39,16 +39,16 @@
     "chai": "^4.2.0",
     "eslint": "^4.19.1",
     "eslint-config-screwdriver": "^3.0.1",
-    "jenkins-mocha": "^6.0.0",
+    "mocha": "^8.1.2",
     "mockery": "^2.0.0",
     "sinon": "^4.5.0"
   },
   "dependencies": {
+    "@hapi/hoek": "^9.0.4",
     "circuit-fuses": "^4.0.4",
-    "hoek": "^5.0.4",
-    "joi": "^13.7.0",
+    "joi": "^17.2.1",
     "request": "^2.88.0",
-    "screwdriver-data-schema": "^18.38.0",
-    "screwdriver-scm-base": "^4.0.5"
+    "screwdriver-data-schema": "^20.0.0",
+    "screwdriver-scm-base": "^7.0.0"
   }
 }
