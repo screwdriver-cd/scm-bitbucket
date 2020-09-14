@@ -185,6 +185,7 @@ class BitbucketScm extends Scm {
      * @param  {String}       config.repoId     Bitbucket repo ID (e.g., "username/repoSlug")
      * @param  {String}       config.token      Admin Oauth2 token for the repo
      * @param  {String}       config.url        url to create for webhook notifications
+     * @param  {String}     config.actions      Actions for the webhook events
      * @return {Promise}                        Resolves when complete
      */
     _createWebhook(config) {
@@ -193,13 +194,13 @@ class BitbucketScm extends Scm {
                 description: 'Screwdriver-CD build trigger',
                 url: config.url,
                 active: true,
-                events: [
+                events: config.actions.length === 0 ? [
                     'repo:push',
                     'pullrequest:created',
                     'pullrequest:fulfilled',
                     'pullrequest:rejected',
                     'pullrequest:updated'
-                ]
+                ] : config.actions
             },
             json: true,
             method: 'POST',
@@ -227,7 +228,8 @@ class BitbucketScm extends Scm {
      * @param  {Object}    config
      * @param  {String}    config.scmUri    The SCM URI to add the webhook to
      * @param  {String}    config.token     Oauth2 token to authenticate with Bitbucket
-      @param  {String}    config.webhookUrl The URL to use for the webhook notifications
+     * @param  {String}    config.webhookUrl The URL to use for the webhook notifications
+     * @param  {Array}     config.actions     The list of actions to be added for this webhook
      * @return {Promise}                    Resolves upon success
      */
     _addWebhook(config) {
@@ -243,6 +245,7 @@ class BitbucketScm extends Scm {
                 this._createWebhook({
                     hookInfo,
                     repoId: repoInfo.repoId,
+                    actions: config.actions,
                     token: config.token,
                     url: config.webhookUrl
                 })
