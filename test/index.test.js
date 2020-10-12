@@ -1558,7 +1558,14 @@ describe('index', function () {
             /* eslint-enable no-underscore-dangle */
                 scmUri,
                 token: oauthToken,
-                webhookUrl: 'url'
+                webhookUrl: 'url',
+                actions: [
+                    'repo:push',
+                    'pullrequest:created',
+                    'pullrequest:fulfilled',
+                    'pullrequest:rejected',
+                    'pullrequest:updated'
+                ]
             })
                 .then(() => {
                     assert.calledWith(requestMock, {
@@ -1613,7 +1620,14 @@ describe('index', function () {
             /* eslint-enable no-underscore-dangle */
                 scmUri,
                 token: oauthToken,
-                webhookUrl: 'url'
+                webhookUrl: 'url',
+                actions: [
+                    'repo:push',
+                    'pullrequest:created',
+                    'pullrequest:fulfilled',
+                    'pullrequest:rejected',
+                    'pullrequest:updated'
+                ]
             }).then(() => {
                 assert.calledWith(requestMock, {
                     json: true,
@@ -1681,7 +1695,14 @@ describe('index', function () {
             /* eslint-enable no-underscore-dangle */
                 scmUri,
                 token: oauthToken,
-                webhookUrl: 'url'
+                webhookUrl: 'url',
+                actions: [
+                    'repo:push',
+                    'pullrequest:created',
+                    'pullrequest:fulfilled',
+                    'pullrequest:rejected',
+                    'pullrequest:updated'
+                ]
             }).then(() => {
                 assert.calledWith(requestMock, {
                     json: true,
@@ -1740,7 +1761,14 @@ describe('index', function () {
             /* eslint-enable no-underscore-dangle */
                 scmUri,
                 token,
-                webhookUrl: 'url'
+                webhookUrl: 'url',
+                actions: [
+                    'repo:push',
+                    'pullrequest:created',
+                    'pullrequest:fulfilled',
+                    'pullrequest:rejected',
+                    'pullrequest:updated'
+                ]
             }).then(assert.fail, (err) => {
                 assert.strictEqual(err.message, expectedMessage);
             });
@@ -1760,7 +1788,14 @@ describe('index', function () {
             /* eslint-enable no-underscore-dangle */
                 scmUri,
                 token,
-                webhookUrl: 'url'
+                webhookUrl: 'url',
+                actions: [
+                    'repo:push',
+                    'pullrequest:created',
+                    'pullrequest:fulfilled',
+                    'pullrequest:rejected',
+                    'pullrequest:updated'
+                ]
             }).then(assert.fail, (err) => {
                 assert.strictEqual(err.message, expectedMessage);
             });
@@ -1795,7 +1830,14 @@ describe('index', function () {
             /* eslint-enable no-underscore-dangle */
                 scmUri,
                 token,
-                webhookUrl: 'url'
+                webhookUrl: 'url',
+                actions: [
+                    'repo:push',
+                    'pullrequest:created',
+                    'pullrequest:fulfilled',
+                    'pullrequest:rejected',
+                    'pullrequest:updated'
+                ]
             }).then(assert.fail, (err) => {
                 assert.strictEqual(err.message, [
                     'Your credentials lack one or more required privilege scopes.',
@@ -1840,7 +1882,14 @@ describe('index', function () {
             /* eslint-enable no-underscore-dangle */
                 scmUri,
                 token,
-                webhookUrl: 'url'
+                webhookUrl: 'url',
+                actions: [
+                    'repo:push',
+                    'pullrequest:created',
+                    'pullrequest:fulfilled',
+                    'pullrequest:rejected',
+                    'pullrequest:updated'
+                ]
             }).then(assert.fail, (err) => {
                 assert.strictEqual(err.message, expectedMessage);
             });
@@ -1870,7 +1919,14 @@ describe('index', function () {
             /* eslint-enable no-underscore-dangle */
                 scmUri,
                 token,
-                webhookUrl: 'url'
+                webhookUrl: 'url',
+                actions: [
+                    'repo:push',
+                    'pullrequest:created',
+                    'pullrequest:fulfilled',
+                    'pullrequest:rejected',
+                    'pullrequest:updated'
+                ]
             }).then(assert.fail, (err) => {
                 assert.strictEqual(err.message, expectedMessage);
             });
