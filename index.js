@@ -133,18 +133,18 @@ class BitbucketScm extends Scm {
 
     /**
      * Get the webhook events mapping of screwdriver events and scm events
-     * @async _getWebhookEventsMapping
+     * @method _getWebhookEventsMapping
      * @return {Object}     Returns a mapping of the events
      */
-    async _getWebhookEventsMapping() {
+    _getWebhookEventsMapping() {
         return {
-            '~pr': [
+            'pr': [
                 'pullrequest:created',
                 'pullrequest:fulfilled',
                 'pullrequest:rejected',
                 'pullrequest:updated'
             ],
-            '~commit': 'push'
+            'commit': 'push'
         };
     }
 
