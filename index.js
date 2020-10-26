@@ -138,13 +138,13 @@ class BitbucketScm extends Scm {
      */
     _getWebhookEventsMapping() {
         return {
-            'pr': [
+            pr: [
                 'pullrequest:created',
                 'pullrequest:fulfilled',
                 'pullrequest:rejected',
                 'pullrequest:updated'
             ],
-            'commit': 'push'
+            commit: 'push'
         };
     }
 
