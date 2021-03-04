@@ -47,13 +47,13 @@ function checkResponseError(response) {
     const errorMessage = hoek.reach(response, 'body.error.message', {
         default: `SCM service unavailable (${response.statusCode}).`
     });
-    const errorReason = hoek.reach(response, 'body.error.detail.required', {
+    const errorReason = hoek.reach(response, 'body.error.detail', {
         default: JSON.stringify(response.body)
     });
 
     const error = new Error(`${errorMessage} Reason "${errorReason}"`);
 
-    error.code = response.statusCode;
+    error.status = response.statusCode;
     throw error;
 }
 
@@ -527,10 +527,8 @@ class BitbucketScm extends Scm {
 
         const response = await this.breaker.runCommand(options);
 
-        if (response.statusCode !== 200) {
-            throw new Error(
-                `STATUS CODE ${response.statusCode}: ${JSON.stringify(response.body)}`);
-        }
+        checkResponseError(response);
+        // `STATUS CODE ${response.statusCode}: ${JSON.stringify(response.body)}`);
 
         return response.body.target.hash;
     }
