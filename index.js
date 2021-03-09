@@ -528,7 +528,6 @@ class BitbucketScm extends Scm {
         const response = await this.breaker.runCommand(options);
 
         checkResponseError(response);
-        // `STATUS CODE ${response.statusCode}: ${JSON.stringify(response.body)}`);
 
         return response.body.target.hash;
     }
