@@ -857,7 +857,9 @@ describe('index', function () {
                 assert.fail('Should not get here');
             }).catch((error) => {
                 assert.calledWith(requestMock, expectedOptions);
-                assert.match(error.message, 'STATUS CODE 404');
+                assert.match(error.message, 'Resource not found Reason ' +
+                    '"There is no API hosted at this URL"');
+                assert.match(error.status, 404);
             });
         });
 
@@ -1744,10 +1746,7 @@ describe('index', function () {
                 type: 'error',
                 error: {
                     message: 'Your credentials lack one or more required privilege scopes.',
-                    detail: {
-                        granted: ['repository'],
-                        required: ['webhook']
-                    }
+                    detail: 'webhook'
                 }
             };
 
@@ -1771,6 +1770,7 @@ describe('index', function () {
                 ]
             }).then(assert.fail, (err) => {
                 assert.strictEqual(err.message, expectedMessage);
+                assert.strictEqual(err.status, 403);
             });
         });
 
@@ -1806,10 +1806,7 @@ describe('index', function () {
                 type: 'error',
                 error: {
                     message: 'Your credentials lack one or more required privilege scopes.',
-                    detail: {
-                        granted: ['repository'],
-                        required: ['webhook']
-                    }
+                    detail: 'webhook'
                 }
             };
 
@@ -1855,10 +1852,7 @@ describe('index', function () {
                 type: 'error',
                 error: {
                     message: 'Your credentials lack one or more required privilege scopes.',
-                    detail: {
-                        granted: ['repository'],
-                        required: ['webhook']
-                    }
+                    detail: 'webhook'
                 }
             };
 
