@@ -8,6 +8,7 @@ const testPrCommands = require('./data/prCommands.json');
 const testCustomPrCommands = require('./data/customPrCommands.json');
 const testCommitBranchCommands = require('./data/commitBranchCommands.json');
 const testChildCommands = require('./data/childCommands.json');
+const testRootDirCommands = require('./data/rootDirCommands.json');
 const testPayloadOpen = require('./data/pr.opened.json');
 const testPayloadSync = require('./data/pr.sync.json');
 const testPayloadClose = require('./data/pr.closed.json');
@@ -183,6 +184,56 @@ describe('index', function () {
             }).then((parsed) => {
                 assert.calledWith(requestMock, expectedOptions);
                 assert.equal(parsed, expected);
+            });
+        });
+
+        it('resolves to the correct parsed url for rootDir', () => {
+            // eslint-disable-next-line max-len
+            const expected = 'bitbucket.org:batman/{de7d7695-1196-46a1-b87d-371b7b2945ab}:mynewbranch:path/to/root';
+
+            // eslint-disable-next-line max-len
+            expectedOptions.url = 'https://api.bitbucket.org/2.0/repositories/batman/test/refs/branches/mynewbranch';
+
+            return scm.parseUrl({
+                // eslint-disable-next-line max-len
+                checkoutUrl: 'https://batman@bitbucket.org/batman/test.git#mynewbranch:path/to/root',
+                token,
+                rootDir: 'path/to/root'
+            }).then((parsed) => {
+                assert.calledWith(requestMock, expectedOptions);
+                assert.equal(parsed, expected);
+            });
+        });
+
+        it('resolves to the correct parsed url for rootDir in checkoutUrl', () => {
+            // eslint-disable-next-line max-len
+            const expected = 'bitbucket.org:batman/{de7d7695-1196-46a1-b87d-371b7b2945ab}:mynewbranch:path/to/root';
+
+            // eslint-disable-next-line max-len
+            expectedOptions.url = 'https://api.bitbucket.org/2.0/repositories/batman/test/refs/branches/mynewbranch';
+
+            return scm.parseUrl({
+                // eslint-disable-next-line max-len
+                checkoutUrl: 'https://batman@bitbucket.org/batman/test.git#mynewbranch:path/to/root',
+                token,
+                rootDir: ''
+            }).then((parsed) => {
+                assert.calledWith(requestMock, expectedOptions);
+                assert.equal(parsed, expected);
+            });
+        });
+
+        it('rejects when unable to match', () => {
+            const invalidCheckoutUrl = 'invalidCheckoutUrl';
+
+            // eslint-disable-next-line no-underscore-dangle
+            return scm._parseUrl({
+                checkoutUrl: invalidCheckoutUrl,
+                token
+            }).then(() => {
+                assert.fail('This should not fail the test');
+            }, (err) => {
+                assert.match(err.message, /Invalid scmUrl/);
             });
         });
 
@@ -579,7 +630,8 @@ describe('index', function () {
             const expected = {
                 url: selfLink,
                 name: 'username/branchName',
-                branch: 'branchName'
+                branch: 'branchName',
+                rootDir: ''
             };
 
             return scm.decorateUrl({
@@ -882,28 +934,31 @@ describe('index', function () {
 
     describe('getFile', () => {
         const apiUrl = `${API_URL_V2}/repositories/repoId/src/branchName/path/to/file.txt`;
-        const scmUri = 'hostName:repoId:branchName';
-        const params = {
-            scmUri,
-            token,
-            path: 'path/to/file.txt'
-        };
-        const expectedOptions = {
-            url: apiUrl,
-            method: 'GET',
-            json: true,
-            auth: {
-                bearer: systemToken
-            }
-        };
+        let expectedOptions;
         let fakeResponse;
+        let params;
+        let scmUri;
 
         beforeEach(() => {
+            expectedOptions = {
+                url: apiUrl,
+                method: 'GET',
+                json: true,
+                auth: {
+                    bearer: systemToken
+                }
+            };
             fakeResponse = {
                 statusCode: 200,
                 body: 'dataValue'
             };
             requestMock.yieldsAsync(null, fakeResponse, fakeResponse.body);
+            scmUri = 'hostName:repoId:branchName';
+            params = {
+                scmUri,
+                token,
+                path: 'path/to/file.txt'
+            };
         });
 
         it('resolves to correct commit sha', () =>
@@ -912,6 +967,22 @@ describe('index', function () {
                 assert.deepEqual(content, 'dataValue');
             })
         );
+
+        it('resolves to correct commit sha with rootDir', () => {
+            scmUri = 'hostName:repoId:branchName:src/app/component';
+            params = {
+                scmUri,
+                token,
+                path: 'path/to/file.txt'
+            };
+            // eslint-disable-next-line max-len
+            expectedOptions.url = 'https://api.bitbucket.org/2.0/repositories/repoId/src/branchName/src/app/component/path/to/file.txt';
+
+            return scm.getFile(params).then((content) => {
+                assert.calledWith(requestMock, expectedOptions);
+                assert.deepEqual(content, 'dataValue');
+            });
+        });
 
         it('rejects if status code is not 200', () => {
             fakeResponse = {
@@ -1500,7 +1571,7 @@ describe('index', function () {
             });
         });
 
-        it('promises to get the checkout command for a child pipeline', () => {
+        it('resolves to get the checkout command for a child pipeline', () => {
             config.parentConfig = {
                 branch: 'master',
                 host: 'github.com',
@@ -1512,6 +1583,15 @@ describe('index', function () {
             return scm.getCheckoutCommand(config)
                 .then((command) => {
                     assert.deepEqual(command, testChildCommands);
+                });
+        });
+
+        it('resolves checkout command with rootDir', () => {
+            config.rootDir = 'path/to/source';
+
+            return scm.getCheckoutCommand(config)
+                .then((command) => {
+                    assert.deepEqual(command, testRootDirCommands);
                 });
         });
     });

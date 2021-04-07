@@ -6,7 +6,8 @@ const Fusebox = require('circuit-fuses').breaker;
 const Scm = require('screwdriver-scm-base');
 const hoek = require('@hapi/hoek');
 const joi = require('joi');
-const url = require('url');
+const Path = require('path');
+const Url = require('url');
 const request = require('request');
 const schema = require('screwdriver-data-schema');
 const API_URL_V2 = 'https://api.bitbucket.org/2.0';
@@ -16,6 +17,7 @@ const MATCH_COMPONENT_HOSTNAME = 1;
 const MATCH_COMPONENT_USER = 2;
 const MATCH_COMPONENT_REPO = 3;
 const MATCH_COMPONENT_BRANCH = 4;
+const MATCH_COMPONENT_ROOTDIR = 5;
 const BRANCH_PAGE_SIZE = 100;
 const STATE_MAP = {
     SUCCESS: 'SUCCESSFUL',
@@ -61,22 +63,31 @@ function checkResponseError(response) {
  * Get repo information
  * @method  getRepoInfo
  * @param   {String}    checkoutUrl     The url to check out repo
+ * @param   {String}    [rootDir]       Root dir of the pipeline
  * @return  {Object}                    An object with hostname, repo, branch, and username
  */
-function getRepoInfo(checkoutUrl) {
+function getRepoInfo(checkoutUrl, rootDir) {
     const regex = schema.config.regex.CHECKOUT_URL;
     const matched = regex.exec(checkoutUrl);
+
+    // Check if regex did not pass
+    if (!matched) {
+        throw new Error(`Invalid scmUrl: ${checkoutUrl}`);
+    }
+
+    const rootDirFromScmUrl = matched[MATCH_COMPONENT_ROOTDIR];
 
     return {
         hostname: matched[MATCH_COMPONENT_HOSTNAME],
         repo: matched[MATCH_COMPONENT_REPO],
         branch: matched[MATCH_COMPONENT_BRANCH] ? matched[MATCH_COMPONENT_BRANCH].slice(1) : null,
-        username: matched[MATCH_COMPONENT_USER]
+        username: matched[MATCH_COMPONENT_USER],
+        rootDir: rootDir || (rootDirFromScmUrl ? rootDirFromScmUrl.slice(1) : undefined)
     };
 }
 
 /**
- * Get hostname, repoId, and branch from scmUri
+ * Get hostname, repoId, branch, and rootDir from scmUri
  * @method getScmUriParts
  * @param  {String}     scmUri
  * @return {Object}
@@ -84,7 +95,7 @@ function getRepoInfo(checkoutUrl) {
 function getScmUriParts(scmUri) {
     const scm = {};
 
-    [scm.hostname, scm.repoId, scm.branch] = scmUri.split(':');
+    [scm.hostname, scm.repoId, scm.branch, scm.rootDir] = scmUri.split(':');
 
     return scm;
 }
@@ -162,7 +173,7 @@ class BitbucketScm extends Scm {
      * @param  {String}     config.url     url for webhook notifications
      * @return {Promise}                   Resolves to a webhook information payload
      */
-    async _findWebhook(config) {
+    async _findWebhook({ page, repoId, token: configToken, url }) {
         const token = await this._getToken();
         const response = await this.breaker.runCommand({
             json: true,
@@ -170,20 +181,20 @@ class BitbucketScm extends Scm {
             auth: {
                 bearer: token
             },
-            url: `${API_URL_V2}/repositories/${config.repoId}/hooks?pagelen=30&page=${config.page}`
+            url: `${API_URL_V2}/repositories/${repoId}/hooks?pagelen=30&page=${page}`
         });
 
         checkResponseError(response);
 
         const hooks = response.body;
-        const result = hooks.values.find(webhook => webhook.url === config.url);
+        const result = hooks.values.find(webhook => webhook.url === url);
 
         if (!result && hooks.size >= WEBHOOK_PAGE_SIZE) {
             return this._findWebhook({
-                page: config.page + 1,
-                repoId: config.repoId,
-                token: config.token,
-                url: config.url
+                page: page + 1,
+                repoId,
+                token: configToken,
+                url
             });
         }
 
@@ -205,30 +216,30 @@ class BitbucketScm extends Scm {
      * @param  {String}       config.actions    Actions for the webhook events
      * @return {Promise}                        Resolves when complete
      */
-    _createWebhook(config) {
+    _createWebhook({ hookInfo, repoId, token, url, actions }) {
         const params = {
             body: {
                 description: 'Screwdriver-CD build trigger',
-                url: config.url,
+                url,
                 active: true,
-                events: config.actions.length === 0 ? [
+                events: actions.length === 0 ? [
                     'repo:push',
                     'pullrequest:created',
                     'pullrequest:fulfilled',
                     'pullrequest:rejected',
                     'pullrequest:updated'
-                ] : config.actions
+                ] : actions
             },
             json: true,
             method: 'POST',
             auth: {
-                bearer: config.token
+                bearer: token
             },
-            url: `${API_URL_V2}/repositories/${config.repoId}/hooks`
+            url: `${API_URL_V2}/repositories/${repoId}/hooks`
         };
 
-        if (config.hookInfo) {
-            params.url = `${params.url}/${config.hookInfo.uuid}`;
+        if (hookInfo) {
+            params.url = `${params.url}/${hookInfo.uuid}`;
             params.method = 'PUT';
         }
 
@@ -249,22 +260,22 @@ class BitbucketScm extends Scm {
      * @param  {String}    config.actions    Actions for the webhook events
      * @return {Promise}                     Resolves upon success
      */
-    _addWebhook(config) {
-        const repoInfo = getScmUriParts(config.scmUri);
+    _addWebhook({ scmUri, token, webhookUrl, actions }) {
+        const repoInfo = getScmUriParts(scmUri);
 
         return this._findWebhook({
             page: 1,
             repoId: repoInfo.repoId,
-            token: config.token,
-            url: config.webhookUrl
+            token,
+            url: webhookUrl
         })
             .then(hookInfo =>
                 this._createWebhook({
                     hookInfo,
                     repoId: repoInfo.repoId,
-                    actions: config.actions,
-                    token: config.token,
-                    url: config.webhookUrl
+                    actions,
+                    token,
+                    url: webhookUrl
                 })
             );
     }
@@ -274,16 +285,18 @@ class BitbucketScm extends Scm {
      * @async parseUrl
      * @param  {Object}    config
      * @param  {String}    config.checkoutUrl   Url to parse
+     * @param  {String}    [config.rootDir]     The root directory
      * @param  {String}    config.token         The token used to authenticate to the SCM
      * @return {Promise}                        Resolves to scmUri
      */
-    async _parseUrl(config) {
-        const repoInfo = getRepoInfo(config.checkoutUrl);
+    async _parseUrl({ checkoutUrl, rootDir }) {
+        const { branch: branchFromCheckout, username, repo, hostname, rootDir: sourceDir } =
+            getRepoInfo(checkoutUrl, rootDir);
         // TODO: add logic to fetch default branch
         // See https://jira.atlassian.com/browse/BCLOUD-20212
-        const branch = repoInfo.branch || 'master';
+        const branch = branchFromCheckout || 'master';
         const branchUrl =
-            `${REPO_URL}/${repoInfo.username}/${repoInfo.repo}/refs/branches/${branch}`;
+            `${REPO_URL}/${username}/${repo}/refs/branches/${branch}`;
         const token = await this._getToken();
 
         const options = {
@@ -295,7 +308,7 @@ class BitbucketScm extends Scm {
             }
         };
 
-        if (repoInfo.hostname !== this.hostname) {
+        if (hostname !== this.hostname) {
             throw new Error(
                 'This checkoutUrl is not supported for your current login host.');
         }
@@ -303,15 +316,17 @@ class BitbucketScm extends Scm {
         const response = await this.breaker.runCommand(options);
 
         if (response.statusCode === 404) {
-            throw new Error(`Cannot find repository ${config.checkoutUrl}`);
+            throw new Error(`Cannot find repository ${checkoutUrl}`);
         }
         if (response.statusCode !== 200) {
             throw new Error(
                 `STATUS CODE ${response.statusCode}: ${JSON.stringify(response.body)}`);
         }
 
-        return `${repoInfo.hostname}:${repoInfo.username}` +
+        const scmUri = `${hostname}:${username}` +
             `/${response.body.target.repository.uuid}:${branch}`;
+
+        return sourceDir ? `${scmUri}:${sourceDir}` : scmUri;
     }
 
     /**
@@ -336,7 +351,7 @@ class BitbucketScm extends Scm {
                 return Promise.resolve(null);
             }
             const changes = hoek.reach(payload, 'push.changes');
-            const link = url.parse(hoek.reach(payload, 'repository.links.html.href'));
+            const link = Url.parse(hoek.reach(payload, 'repository.links.html.href'));
 
             parsed.type = 'repo';
             parsed.action = 'push';
@@ -360,7 +375,7 @@ class BitbucketScm extends Scm {
                 return Promise.resolve(null);
             }
 
-            const link = url.parse(hoek.reach(payload, 'repository.links.html.href'));
+            const link = Url.parse(hoek.reach(payload, 'repository.links.html.href'));
 
             parsed.type = 'pr';
             parsed.username = hoek.reach(payload, 'actor.uuid');
@@ -385,10 +400,10 @@ class BitbucketScm extends Scm {
      * @param  {Object}        config.username Username to query more information for
      * @return {Promise}                       Resolves to a decorated author with url, name, username, avatar
      */
-    async _decorateAuthor(config) {
+    async _decorateAuthor({ username }) {
         const token = await this._getToken();
         const options = {
-            url: `${USER_URL}/${encodeURIComponent(config.username)}`,
+            url: `${USER_URL}/${encodeURIComponent(username)}`,
             method: 'GET',
             json: true,
             auth: {
@@ -399,15 +414,15 @@ class BitbucketScm extends Scm {
         const response = await this.breaker.runCommand(options);
         const body = response.body;
 
-        if (response.statusCode === 404 && !config.username.match(/^\{.*\}/)) {
+        if (response.statusCode === 404 && !username.match(/^\{.*\}/)) {
             // Bitbucket API has changed, cannot use strict username request anymore, for now we will
             // have to return a simple generated decoration result to allow all builds to function.
             // We will only allow this if the username is not a {uuid} pattern. Since if this is a {uuid}
             // pattern, this likely is a valid 404.
             return {
                 url: '',
-                name: config.username,
-                username: config.username,
+                name: username,
+                username,
                 avatar: ''
             };
         } else if (response.statusCode !== 200) {
@@ -432,11 +447,11 @@ class BitbucketScm extends Scm {
      * @param  {String}    config.token   Service token to authenticate with Bitbucket
      * @return {Object}                   Resolves to a decoratedUrl with url, name, and branch
      */
-    async _decorateUrl(config) {
-        const scm = getScmUriParts(config.scmUri);
+    async _decorateUrl({ scmUri }) {
+        const { branch, repoId, rootDir } = getScmUriParts(scmUri);
         const token = await this._getToken();
         const options = {
-            url: `${REPO_URL}/${scm.repoId}`,
+            url: `${REPO_URL}/${repoId}`,
             method: 'GET',
             json: true,
             auth: {
@@ -455,7 +470,8 @@ class BitbucketScm extends Scm {
         return {
             url: body.links.html.href,
             name: body.full_name,
-            branch: scm.branch
+            branch,
+            rootDir: rootDir || ''
         };
     }
 
@@ -468,11 +484,11 @@ class BitbucketScm extends Scm {
      * @param  {Object}     config.token     Service token to authenticate with Bitbucket
      * @return {Promise}                     Resolves to a decorated object with url, message, and author
      */
-    async _decorateCommit(config) {
-        const scm = getScmUriParts(config.scmUri);
+    async _decorateCommit({ scmUri, sha, token: configToken }) {
+        const scm = getScmUriParts(scmUri);
         const token = await this._getToken();
         const options = {
-            url: `${REPO_URL}/${scm.repoId}/commit/${config.sha}`,
+            url: `${REPO_URL}/${scm.repoId}/commit/${sha}`,
             method: 'GET',
             json: true,
             auth: {
@@ -490,7 +506,7 @@ class BitbucketScm extends Scm {
         // eslint-disable-next-line
         return this._decorateAuthor({
             username: body.author.user.uuid,
-            token: config.token
+            token: configToken
         }).then(author => ({
             url: body.links.html.href,
             message: body.message,
@@ -535,7 +551,7 @@ class BitbucketScm extends Scm {
     /**
      * Bitbucket doesn't have an equivalent endpoint to get the changed files,
      * so returning null for now
-     * @method getFile
+     * @method getChangedFiles
      * @param  {Object}   config              Configuration
      * @param  {String}   config.type            Can be 'pr' or 'repo'
      * @param  {Object}   config.webhookPayload  The webhook payload received from the
@@ -557,10 +573,11 @@ class BitbucketScm extends Scm {
      * @param  {String}   [config.ref]        The reference to the SCM, either branch or sha
      * @return {Promise}                      Resolves to the content of the file
      */
-    async _getFile(config) {
-        const scm = getScmUriParts(config.scmUri);
-        const branch = config.ref || scm.branch;
-        const fileUrl = `${API_URL_V2}/repositories/${scm.repoId}/src/${branch}/${config.path}`;
+    async _getFile({ scmUri, ref, path }) {
+        const { branch: branchFromScmUri, repoId, rootDir } = getScmUriParts(scmUri);
+        const branch = ref || branchFromScmUri;
+        const fullPath = rootDir ? Path.join(rootDir, path) : path;
+        const fileUrl = `${API_URL_V2}/repositories/${repoId}/src/${branch}/${fullPath}`;
         const token = await this._getToken();
         const options = {
             url: fileUrl,
@@ -589,8 +606,8 @@ class BitbucketScm extends Scm {
      * @param  {String}   config.token      The token used to authenticate to the SCM
      * @return {Promise}                    Resolves to permissions object with admin, push, pull
      */
-    async _getPermissions(config) {
-        const scm = getScmUriParts(config.scmUri);
+    async _getPermissions({ scmUri }) {
+        const scm = getScmUriParts(scmUri);
         const [owner, uuid] = scm.repoId.split('/');
         const token = await this._getToken();
 
@@ -661,24 +678,24 @@ class BitbucketScm extends Scm {
      * @param  {Number}   config.pipelineId   Pipeline ID
      * @return {Promise}
      */
-    _updateCommitStatus(config) {
-        const scm = getScmUriParts(config.scmUri);
-        let context = `Screwdriver/${config.pipelineId}/`;
+    _updateCommitStatus({ scmUri, sha, buildStatus, url, jobName, pipelineId, token }) {
+        const scm = getScmUriParts(scmUri);
+        let context = `Screwdriver/${pipelineId}/`;
 
-        context += /^PR/.test(config.jobName) ? 'PR' : config.jobName;
+        context += /^PR/.test(jobName) ? 'PR' : jobName;
 
         const options = {
-            url: `${REPO_URL}/${scm.repoId}/commit/${config.sha}/statuses/build`,
+            url: `${REPO_URL}/${scm.repoId}/commit/${sha}/statuses/build`,
             method: 'POST',
             json: true,
             body: {
-                url: config.url,
-                state: STATE_MAP[config.buildStatus],
-                key: config.sha,
+                url,
+                state: STATE_MAP[buildStatus],
+                key: sha,
                 description: context
             },
             auth: {
-                bearer: decodeURIComponent(config.token)
+                bearer: decodeURIComponent(token)
             }
         };
 
@@ -726,25 +743,28 @@ class BitbucketScm extends Scm {
      * @param  {String}    config.sha            Commit sha
      * @param  {String}    [config.commitBranch] Commit branch
      * @param  {String}    [config.prRef]        PR reference (can be a PR branch or reference)
-     * @return {Promise}
+     * @param  {Object}    [config.parentConfig] Config for parent pipeline
+     * @param  {String}    [config.rootDir]      Root directory
+     * @return {Promise}                         Resolves to object containing name and checkout commands
      */
-    _getCheckoutCommand(config) {
-        const checkoutUrl = `${config.host}/${config.org}/${config.repo}`;
-        const sshCheckoutUrl = `git@${config.host}:${config.org}/${config.repo}`;
-        const branch = config.commitBranch ? config.commitBranch : config.branch;
-        const checkoutRef = config.prRef ? branch : config.sha;
+    _getCheckoutCommand({ branch: pipelineBranch, host, org, repo, sha, commitBranch,
+        prRef: prReference, parentConfig, rootDir }) {
+        const checkoutUrl = `${host}/${org}/${repo}`;
+        const sshCheckoutUrl = `git@${host}:${org}/${repo}`;
+        const branch = commitBranch || pipelineBranch;
+        const checkoutRef = prReference ? branch : sha;
         const gitWrapper = '$(if git --version > /dev/null 2>&1; ' +
             "then echo 'eval'; " +
             "else echo 'sd-step exec core/git'; fi)";
         const command = [];
 
         // Checkout config pipeline if this is a child pipeline
-        if (config.parentConfig) {
-            const parentCheckoutUrl = `${config.parentConfig.host}/${config.parentConfig.org}/`
-                + `${config.parentConfig.repo}`; // URL for https
-            const parentSshCheckoutUrl = `git@${config.parentConfig.host}:`
-                + `${config.parentConfig.org}/${config.parentConfig.repo}`; // URL for ssh
-            const parentBranch = config.parentConfig.branch;
+        if (parentConfig) {
+            const parentCheckoutUrl = `${parentConfig.host}/${parentConfig.org}/`
+                + `${parentConfig.repo}`; // URL for https
+            const parentSshCheckoutUrl = `git@${parentConfig.host}:`
+                + `${parentConfig.org}/${parentConfig.repo}`; // URL for ssh
+            const parentBranch = parentConfig.branch;
             const externalConfigDir = '$SD_ROOT_DIR/config';
 
             command.push('if [ ! -z $SCM_CLONE_TYPE ] && [ $SCM_CLONE_TYPE = ssh ]; ' +
@@ -768,8 +788,8 @@ class BitbucketScm extends Scm {
 
             // Reset to SHA
             command.push(`${gitWrapper} "git -C $SD_CONFIG_DIR reset --hard `
-                + `${config.parentConfig.sha}"`);
-            command.push(`echo Reset external config repo to ${config.parentConfig.sha}`);
+                + `${parentConfig.sha}"`);
+            command.push(`echo Reset external config repo to ${parentConfig.sha}`);
         }
 
         // Git clone
@@ -796,12 +816,17 @@ class BitbucketScm extends Scm {
         command.push(`${gitWrapper} "git config user.name ${this.config.username}"`);
         command.push(`${gitWrapper} "git config user.email ${this.config.email}"`);
 
-        if (config.prRef) {
-            const prRef = config.prRef.replace('merge', 'head:pr');
+        // cd into rootDir after cloning
+        if (rootDir) {
+            command.push(`cd ${rootDir}`);
+        }
+
+        if (prReference) {
+            const prRef = prReference.replace('merge', 'head:pr');
 
             command.push(`echo 'Fetching PR and merging with ${branch}'`);
             command.push(`${gitWrapper} "git fetch origin ${prRef}"`);
-            command.push(`${gitWrapper} "git merge --no-edit ${config.sha}"`);
+            command.push(`${gitWrapper} "git merge --no-edit ${sha}"`);
             // Init & Update submodule
             command.push(`${gitWrapper} "git submodule init"`);
             command.push(`${gitWrapper} "git submodule update --recursive"`);
@@ -818,8 +843,8 @@ class BitbucketScm extends Scm {
      * @param  {String}   config.token        The token used to authenticate to the SCM
      * @return {Promise}
      */
-    async _getOpenedPRs(config) {
-        const repoId = getScmUriParts(config.scmUri).repoId;
+    async _getOpenedPRs({ scmUri }) {
+        const repoId = getScmUriParts(scmUri).repoId;
         const token = await this._getToken();
 
         const response = await this.breaker.runCommand({
@@ -850,12 +875,12 @@ class BitbucketScm extends Scm {
      * @param  {Integer}  config.prNum      The PR number used to fetch the PR
      * @return {Promise}
      */
-    async _getPrInfo(config) {
-        const repoId = getScmUriParts(config.scmUri).repoId;
+    async _getPrInfo({ scmUri, prNum }) {
+        const repoId = getScmUriParts(scmUri).repoId;
         const token = await this._getToken();
 
         const response = await this.breaker.runCommand({
-            url: `${API_URL_V2}/repositories/${repoId}/pullrequests/${config.prNum}`,
+            url: `${API_URL_V2}/repositories/${repoId}/pullrequests/${prNum}`,
             method: 'GET',
             json: true,
             auth: {
@@ -962,13 +987,13 @@ class BitbucketScm extends Scm {
      * @param  {String}     config.token       Service token to authenticate with Github
      * @return {Promise}                       Resolves when complete
      */
-    async _getBranchList(config) {
-        const repoInfo = getScmUriParts(config.scmUri);
+    async _getBranchList({ scmUri, token }) {
+        const repoInfo = getScmUriParts(scmUri);
 
         return this._findBranches({
             repoId: repoInfo.repoId,
             page: 1,
-            token: config.token
+            token
         });
     }
 
