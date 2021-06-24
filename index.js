@@ -108,6 +108,7 @@ class BitbucketScm extends Scm {
      * @param  {String}  options.oauthClientSecret   OAuth Client Secret provided by Bitbucket application
      * @param  {String}  [options.username=sd-buildbot]           Bitbucket username for checkout
      * @param  {String}  [options.email=dev-null@screwdriver.cd]  Bitbucket user email for checkout
+     * @param  {Object}  [options.readOnly={}]       Read-only SCM instance config with: enabled, username, accessToken, cloneType
      * @param  {Boolean} [options.https=false]       Is the Screwdriver API running over HTTPS
      * @param  {Object}  [options.fusebox={}]        Circuit Breaker configuration
      * @return {BitbucketScm}
@@ -118,6 +119,12 @@ class BitbucketScm extends Scm {
         this.config = joi.attempt(config, joi.object().keys({
             username: joi.string().optional().default('sd-buildbot'),
             email: joi.string().optional().default('dev-null@screwdriver.cd'),
+            readOnly: joi.object().keys({
+                enabled: joi.boolean().optional(),
+                username: joi.string().optional(),
+                accessToken: joi.string().optional(),
+                cloneType: joi.string().valid('https', 'ssh').optional().default('https')
+            }).optional().default({}),
             https: joi.boolean().optional().default(false),
             oauthClientId: joi.string().required(),
             oauthClientSecret: joi.string().required(),
@@ -794,12 +801,23 @@ class BitbucketScm extends Scm {
 
         // Git clone
         command.push(`echo 'Cloning ${checkoutUrl}, on branch ${branch}'`);
-        command.push('if [ ! -z $SCM_CLONE_TYPE ] && [ $SCM_CLONE_TYPE = ssh ]; ' +
-            `then export SCM_URL=${sshCheckoutUrl}; ` +
-            'elif [ ! -z $SCM_USERNAME ] && [ ! -z $SCM_ACCESS_TOKEN ]; ' +
-            `then export SCM_URL=https://$SCM_USERNAME:$SCM_ACCESS_TOKEN@${checkoutUrl}; ` +
-            `else export SCM_URL=https://${checkoutUrl}; fi`
-        );
+
+        // Use read-only clone type
+        if (hoek.reach(this.config, 'readOnly.enabled')) {
+            if (hoek.reach(this.config, 'readOnly.cloneType') === 'ssh') {
+                command.push(`export SCM_URL=${sshCheckoutUrl}`);
+            } else {
+                command.push('if [ ! -z $SCM_USERNAME ] && [ ! -z $SCM_ACCESS_TOKEN ]; ' +
+                    `then export SCM_URL=https://$SCM_USERNAME:$SCM_ACCESS_TOKEN@${checkoutUrl}; ` +
+                    `else export SCM_URL=https://${checkoutUrl}; fi`);
+            }
+        } else {
+            command.push('if [ ! -z $SCM_CLONE_TYPE ] && [ $SCM_CLONE_TYPE = ssh ]; ' +
+                `then export SCM_URL=${sshCheckoutUrl}; ` +
+                'elif [ ! -z $SCM_USERNAME ] && [ ! -z $SCM_ACCESS_TOKEN ]; ' +
+                `then export SCM_URL=https://$SCM_USERNAME:$SCM_ACCESS_TOKEN@${checkoutUrl}; ` +
+                `else export SCM_URL=https://${checkoutUrl}; fi`);
+        }
         command.push('if [ ! -z $GIT_SHALLOW_CLONE ] && [ $GIT_SHALLOW_CLONE = false ]; '
               + `then ${gitWrapper} `
               + `"git clone --recursive --quiet --progress --branch '${branch}' `
@@ -807,6 +825,7 @@ class BitbucketScm extends Scm {
               + `else ${gitWrapper} `
               + '"git clone --depth=50 --no-single-branch --recursive --quiet --progress '
               + `--branch '${branch}' $SCM_URL $SD_SOURCE_DIR"; fi`);
+
         // Reset to Sha
         command.push(`echo 'Reset to SHA ${checkoutRef}'`);
         command.push(`${gitWrapper} "git reset --hard '${checkoutRef}'"`);
