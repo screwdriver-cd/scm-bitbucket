@@ -13,15 +13,17 @@ npm install screwdriver-scm-bitbucket
 
 The class has a variety of knobs to tweak when interacting with Bitbucket.org.
 
-| Parameter        | Type  |  Description |
-| :-------------   | :---- | :-------------|
-| config        | Object | Configuration Object |
-| config.oauthClientId | String | OAuth Client ID provided by Bitbucket application |
-| config.oauthClientSecret | String | OAuth Client Secret provided by Bitbucket application |
-| config.username (sd-buildbot) | String | Bitbucket username for checkout |
-| config.email (dev-null@screwdriver.cd) | String | Bitbucket user email for checkout |
-| config.https (false) | Boolean | Is the Screwdriver API running over HTTPS |
-| config.fusebox ({}) | Object | [Circuit Breaker configuration][circuitbreaker] |
+| Parameter        | Type  | Default |  Description |
+| :-------------   | :---- | :------ | :-------------|
+| config        | Object | | Configuration Object |
+| config.oauthClientId | String | | OAuth Client ID provided by Bitbucket application |
+| config.oauthClientSecret | String | | OAuth Client Secret provided by Bitbucket application |
+| config.username | String | sd-buildbot | Bitbucket username for checkout |
+| config.email | String | dev-null@screwdriver.cd | Bitbucket user email for checkout |
+| config.https | Boolean | false | Is the Screwdriver API running over HTTPS |
+| config.readOnly | Object | {} | Config with readOnly info: enabled, username, accessToken, cloneType |
+| config.fusebox | Object | {} | [Circuit Breaker configuration][circuitbreaker] |
+
 ```js
 const scm = new BitbucketScm({
     oauthClientId: 'your-client-id',

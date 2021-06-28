@@ -4,6 +4,8 @@ const assert = require('chai').assert;
 const mockery = require('mockery');
 const sinon = require('sinon');
 const testCommands = require('./data/commands.json');
+const testReadOnlyCommandsHttps = require('./data/readOnlyCommandsHttps.json');
+const testReadOnlyCommandsSsh = require('./data/readOnlyCommandsSsh.json');
 const testPrCommands = require('./data/prCommands.json');
 const testCustomPrCommands = require('./data/customPrCommands.json');
 const testCommitBranchCommands = require('./data/commitBranchCommands.json');
@@ -92,6 +94,7 @@ describe('index', function () {
                 username: 'abcd',
                 email: 'dev-null@my.email.com',
                 fusebox: {},
+                readOnly: {},
                 https: false
             });
         });
@@ -1538,6 +1541,42 @@ describe('index', function () {
                 assert.deepEqual(command, testCommands);
             })
         );
+
+        it('gets the checkout command with https clone type when read-only is enabled', () => {
+            scm = new BitbucketScm({
+                oauthClientId: 'myclientid',
+                oauthClientSecret: 'myclientsecret',
+                username: 'abcd',
+                email: 'dev-null@my.email.com',
+                readOnly: {
+                    enabled: true,
+                    cloneType: 'https'
+                }
+            });
+
+            return scm.getCheckoutCommand(config)
+                .then((command) => {
+                    assert.deepEqual(command, testReadOnlyCommandsHttps);
+                });
+        });
+
+        it('gets the checkout command with ssh clone type when read-only is enabled', () => {
+            scm = new BitbucketScm({
+                oauthClientId: 'myclientid',
+                oauthClientSecret: 'myclientsecret',
+                username: 'abcd',
+                email: 'dev-null@my.email.com',
+                readOnly: {
+                    enabled: true,
+                    cloneType: 'ssh'
+                }
+            });
+
+            return scm.getCheckoutCommand(config)
+                .then((command) => {
+                    assert.deepEqual(command, testReadOnlyCommandsSsh);
+                });
+        });
 
         it('resolves checkout command with prRef', () => {
             config.prRef = 'prBranch';
