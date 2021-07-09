@@ -116,20 +116,44 @@ class BitbucketScm extends Scm {
     constructor(config = {}) {
         super();
 
-        this.config = joi.attempt(config, joi.object().keys({
-            username: joi.string().optional().default('sd-buildbot'),
-            email: joi.string().optional().default('dev-null@screwdriver.cd'),
-            readOnly: joi.object().keys({
-                enabled: joi.boolean().optional(),
-                username: joi.string().optional(),
-                accessToken: joi.string().optional(),
-                cloneType: joi.string().valid('https', 'ssh').optional().default('https')
-            }).optional().default({}),
-            https: joi.boolean().optional().default(false),
-            oauthClientId: joi.string().required(),
-            oauthClientSecret: joi.string().required(),
-            fusebox: joi.object().default({})
-        }).unknown(true), 'Invalid config for Bitbucket');
+        this.config = joi.attempt(
+            config,
+            joi
+                .object()
+                .keys({
+                    username: joi
+                        .string()
+                        .optional()
+                        .default('sd-buildbot'),
+                    email: joi
+                        .string()
+                        .optional()
+                        .default('dev-null@screwdriver.cd'),
+                    readOnly: joi
+                        .object()
+                        .keys({
+                            enabled: joi.boolean().optional(),
+                            username: joi.string().optional(),
+                            accessToken: joi.string().optional(),
+                            cloneType: joi
+                                .string()
+                                .valid('https', 'ssh')
+                                .optional()
+                                .default('https')
+                        })
+                        .optional()
+                        .default({}),
+                    https: joi
+                        .boolean()
+                        .optional()
+                        .default(false),
+                    oauthClientId: joi.string().required(),
+                    oauthClientSecret: joi.string().required(),
+                    fusebox: joi.object().default({})
+                })
+                .unknown(true),
+            'Invalid config for Bitbucket'
+        );
 
         this.breaker = new Fusebox(request, this.config.fusebox);
 
@@ -156,12 +180,7 @@ class BitbucketScm extends Scm {
      */
     _getWebhookEventsMapping() {
         return {
-            pr: [
-                'pullrequest:created',
-                'pullrequest:fulfilled',
-                'pullrequest:rejected',
-                'pullrequest:updated'
-            ],
+            pr: ['pullrequest:created', 'pullrequest:fulfilled', 'pullrequest:rejected', 'pullrequest:updated'],
             commit: 'push'
         };
     }
@@ -229,13 +248,16 @@ class BitbucketScm extends Scm {
                 description: 'Screwdriver-CD build trigger',
                 url,
                 active: true,
-                events: actions.length === 0 ? [
-                    'repo:push',
-                    'pullrequest:created',
-                    'pullrequest:fulfilled',
-                    'pullrequest:rejected',
-                    'pullrequest:updated'
-                ] : actions
+                events:
+                    actions.length === 0
+                        ? [
+                              'repo:push',
+                              'pullrequest:created',
+                              'pullrequest:fulfilled',
+                              'pullrequest:rejected',
+                              'pullrequest:updated'
+                          ]
+                        : actions
             },
             json: true,
             method: 'POST',
@@ -250,8 +272,7 @@ class BitbucketScm extends Scm {
             params.method = 'PUT';
         }
 
-        return this.breaker.runCommand(params)
-            .then(checkResponseError);
+        return this.breaker.runCommand(params).then(checkResponseError);
     }
 
     /**
@@ -275,16 +296,15 @@ class BitbucketScm extends Scm {
             repoId: repoInfo.repoId,
             token,
             url: webhookUrl
-        })
-            .then(hookInfo =>
-                this._createWebhook({
-                    hookInfo,
-                    repoId: repoInfo.repoId,
-                    actions,
-                    token,
-                    url: webhookUrl
-                })
-            );
+        }).then(hookInfo =>
+            this._createWebhook({
+                hookInfo,
+                repoId: repoInfo.repoId,
+                actions,
+                token,
+                url: webhookUrl
+            })
+        );
     }
 
     /**
@@ -297,13 +317,14 @@ class BitbucketScm extends Scm {
      * @return {Promise}                        Resolves to scmUri
      */
     async _parseUrl({ checkoutUrl, rootDir }) {
-        const { branch: branchFromCheckout, username, repo, hostname, rootDir: sourceDir } =
-            getRepoInfo(checkoutUrl, rootDir);
+        const { branch: branchFromCheckout, username, repo, hostname, rootDir: sourceDir } = getRepoInfo(
+            checkoutUrl,
+            rootDir
+        );
         // TODO: add logic to fetch default branch
         // See https://jira.atlassian.com/browse/BCLOUD-20212
         const branch = branchFromCheckout || 'master';
-        const branchUrl =
-            `${REPO_URL}/${username}/${repo}/refs/branches/${branch}`;
+        const branchUrl = `${REPO_URL}/${username}/${repo}/refs/branches/${branch}`;
         const token = await this._getToken();
 
         const options = {
@@ -316,8 +337,7 @@ class BitbucketScm extends Scm {
         };
 
         if (hostname !== this.hostname) {
-            throw new Error(
-                'This checkoutUrl is not supported for your current login host.');
+            throw new Error('This checkoutUrl is not supported for your current login host.');
         }
 
         const response = await this.breaker.runCommand(options);
@@ -326,12 +346,10 @@ class BitbucketScm extends Scm {
             throw new Error(`Cannot find repository ${checkoutUrl}`);
         }
         if (response.statusCode !== 200) {
-            throw new Error(
-                `STATUS CODE ${response.statusCode}: ${JSON.stringify(response.body)}`);
+            throw new Error(`STATUS CODE ${response.statusCode}: ${JSON.stringify(response.body)}`);
         }
 
-        const scmUri = `${hostname}:${username}` +
-            `/${response.body.target.repository.uuid}:${branch}`;
+        const scmUri = `${hostname}:${username}/${response.body.target.repository.uuid}:${branch}`;
 
         return sourceDir ? `${scmUri}:${sourceDir}` : scmUri;
     }
@@ -353,49 +371,48 @@ class BitbucketScm extends Scm {
         parsed.scmContext = scmContexts[0];
 
         switch (typeHeader) {
-        case 'repo': {
-            if (actionHeader !== 'push') {
-                return Promise.resolve(null);
+            case 'repo': {
+                if (actionHeader !== 'push') {
+                    return Promise.resolve(null);
+                }
+                const changes = hoek.reach(payload, 'push.changes');
+                const link = Url.parse(hoek.reach(payload, 'repository.links.html.href'));
+
+                parsed.type = 'repo';
+                parsed.action = 'push';
+                parsed.username = hoek.reach(payload, 'actor.uuid');
+                parsed.checkoutUrl = `${link.protocol}//${link.hostname}${link.pathname}.git`;
+                parsed.branch = hoek.reach(changes[0], 'new.name');
+                parsed.sha = hoek.reach(changes[0], 'new.target.hash');
+                parsed.lastCommitMessage = hoek.reach(changes[0], 'new.target.message', { default: '' });
+
+                return Promise.resolve(parsed);
             }
-            const changes = hoek.reach(payload, 'push.changes');
-            const link = Url.parse(hoek.reach(payload, 'repository.links.html.href'));
+            case 'pullrequest': {
+                if (actionHeader === 'created') {
+                    parsed.action = 'opened';
+                } else if (actionHeader === 'updated') {
+                    parsed.action = 'synchronized';
+                } else if (actionHeader === 'fullfilled' || actionHeader === 'rejected') {
+                    parsed.action = 'closed';
+                } else {
+                    return Promise.resolve(null);
+                }
 
-            parsed.type = 'repo';
-            parsed.action = 'push';
-            parsed.username = hoek.reach(payload, 'actor.uuid');
-            parsed.checkoutUrl = `${link.protocol}//${link.hostname}${link.pathname}.git`;
-            parsed.branch = hoek.reach(changes[0], 'new.name');
-            parsed.sha = hoek.reach(changes[0], 'new.target.hash');
-            parsed.lastCommitMessage = hoek.reach(changes[0], 'new.target.message',
-                { default: '' });
+                const link = Url.parse(hoek.reach(payload, 'repository.links.html.href'));
 
-            return Promise.resolve(parsed);
-        }
-        case 'pullrequest': {
-            if (actionHeader === 'created') {
-                parsed.action = 'opened';
-            } else if (actionHeader === 'updated') {
-                parsed.action = 'synchronized';
-            } else if (actionHeader === 'fullfilled' || actionHeader === 'rejected') {
-                parsed.action = 'closed';
-            } else {
-                return Promise.resolve(null);
+                parsed.type = 'pr';
+                parsed.username = hoek.reach(payload, 'actor.uuid');
+                parsed.checkoutUrl = `${link.protocol}//${link.hostname}${link.pathname}.git`;
+                parsed.branch = hoek.reach(payload, 'pullrequest.destination.branch.name');
+                parsed.sha = hoek.reach(payload, 'pullrequest.source.commit.hash');
+                parsed.prNum = hoek.reach(payload, 'pullrequest.id');
+                parsed.prRef = hoek.reach(payload, 'pullrequest.source.branch.name');
+
+                return Promise.resolve(parsed);
             }
-
-            const link = Url.parse(hoek.reach(payload, 'repository.links.html.href'));
-
-            parsed.type = 'pr';
-            parsed.username = hoek.reach(payload, 'actor.uuid');
-            parsed.checkoutUrl = `${link.protocol}//${link.hostname}${link.pathname}.git`;
-            parsed.branch = hoek.reach(payload, 'pullrequest.destination.branch.name');
-            parsed.sha = hoek.reach(payload, 'pullrequest.source.commit.hash');
-            parsed.prNum = hoek.reach(payload, 'pullrequest.id');
-            parsed.prRef = hoek.reach(payload, 'pullrequest.source.branch.name');
-
-            return Promise.resolve(parsed);
-        }
-        default:
-            return Promise.resolve(null);
+            default:
+                return Promise.resolve(null);
         }
     }
 
@@ -419,7 +436,7 @@ class BitbucketScm extends Scm {
         };
 
         const response = await this.breaker.runCommand(options);
-        const body = response.body;
+        const { body } = response;
 
         if (response.statusCode === 404 && !username.match(/^\{.*\}/)) {
             // Bitbucket API has changed, cannot use strict username request anymore, for now we will
@@ -432,7 +449,8 @@ class BitbucketScm extends Scm {
                 username,
                 avatar: ''
             };
-        } else if (response.statusCode !== 200) {
+        }
+        if (response.statusCode !== 200) {
             throw new Error(`STATUS CODE ${response.statusCode}: ${JSON.stringify(body)}`);
         }
 
@@ -467,11 +485,10 @@ class BitbucketScm extends Scm {
         };
 
         const response = await this.breaker.runCommand(options);
-        const body = response.body;
+        const { body } = response;
 
         if (response.statusCode !== 200) {
-            throw new Error(
-                `STATUS CODE ${response.statusCode}: ${JSON.stringify(body)}`);
+            throw new Error(`STATUS CODE ${response.statusCode}: ${JSON.stringify(body)}`);
         }
 
         return {
@@ -504,7 +521,7 @@ class BitbucketScm extends Scm {
         };
 
         const response = await this.breaker.runCommand(options);
-        const body = response.body;
+        const { body } = response;
 
         if (response.statusCode !== 200) {
             throw new Error(`STATUS CODE ${response.statusCode}: ${JSON.stringify(body)}`);
@@ -536,8 +553,7 @@ class BitbucketScm extends Scm {
         }
 
         const scm = getScmUriParts(config.scmUri);
-        const branchUrl =
-            `${REPO_URL}/${scm.repoId}/refs/branches/${scm.branch}`;
+        const branchUrl = `${REPO_URL}/${scm.repoId}/refs/branches/${scm.branch}`;
         const token = await this._getToken();
         const options = {
             url: branchUrl,
@@ -598,8 +614,7 @@ class BitbucketScm extends Scm {
         const response = await this.breaker.runCommand(options);
 
         if (response.statusCode !== 200) {
-            throw new Error(
-                `STATUS CODE ${response.statusCode}: ${JSON.stringify(response.body)}`);
+            throw new Error(`STATUS CODE ${response.statusCode}: ${JSON.stringify(response.body)}`);
         }
 
         return response.body;
@@ -619,16 +634,18 @@ class BitbucketScm extends Scm {
         const token = await this._getToken();
 
         // First, check to see if the repository exists
-        await this.breaker.runCommand({
-            url: `${API_URL_V2}/repositories/${owner}/${uuid}`,
-            method: 'GET',
-            json: true,
-            auth: {
-                bearer: token
-            }
-        }).then(checkResponseError);
+        await this.breaker
+            .runCommand({
+                url: `${API_URL_V2}/repositories/${owner}/${uuid}`,
+                method: 'GET',
+                json: true,
+                auth: {
+                    bearer: token
+                }
+            })
+            .then(checkResponseError);
 
-        const getPerm = async (desiredAccess) => {
+        const getPerm = async desiredAccess => {
             const options = {
                 url: `${API_URL_V2}/repositories/${owner}?q=uuid%3D%22${uuid}%22`,
                 method: 'GET',
@@ -646,26 +663,20 @@ class BitbucketScm extends Scm {
                 options.url = `${options.url}`;
             }
 
-            return this.breaker.runCommand(options)
-                .then((response) => {
-                    if (response.statusCode !== 200) {
-                        throw new Error(
-                            `STATUS CODE ${response.statusCode}: ${JSON.stringify(response.body)}`);
-                    }
+            return this.breaker.runCommand(options).then(response => {
+                if (response.statusCode !== 200) {
+                    throw new Error(`STATUS CODE ${response.statusCode}: ${JSON.stringify(response.body)}`);
+                }
 
-                    if (response.body.values) {
-                        return response.body.values.some(r => r.uuid === uuid);
-                    }
+                if (response.body.values) {
+                    return response.body.values.some(r => r.uuid === uuid);
+                }
 
-                    return false;
-                });
+                return false;
+            });
         };
 
-        return Promise.all([
-            getPerm('admin'),
-            getPerm('push'),
-            getPerm('pull')
-        ]).then(([admin, push, pull]) => ({
+        return Promise.all([getPerm('admin'), getPerm('push'), getPerm('pull')]).then(([admin, push, pull]) => ({
             admin,
             push,
             pull
@@ -706,15 +717,13 @@ class BitbucketScm extends Scm {
             }
         };
 
-        return this.breaker.runCommand(options)
-            .then((response) => {
-                if (response.statusCode !== 201 && response.statusCode !== 200) {
-                    throw new Error(
-                        `STATUS CODE ${response.statusCode}: ${JSON.stringify(response.body)}`);
-                }
+        return this.breaker.runCommand(options).then(response => {
+            if (response.statusCode !== 201 && response.statusCode !== 200) {
+                throw new Error(`STATUS CODE ${response.statusCode}: ${JSON.stringify(response.body)}`);
+            }
 
-                return response;
-            });
+            return response;
+        });
     }
 
     /**
@@ -754,48 +763,57 @@ class BitbucketScm extends Scm {
      * @param  {String}    [config.rootDir]      Root directory
      * @return {Promise}                         Resolves to object containing name and checkout commands
      */
-    _getCheckoutCommand({ branch: pipelineBranch, host, org, repo, sha, commitBranch,
-        prRef: prReference, parentConfig, rootDir }) {
+    _getCheckoutCommand({
+        branch: pipelineBranch,
+        host,
+        org,
+        repo,
+        sha,
+        commitBranch,
+        prRef: prReference,
+        parentConfig,
+        rootDir
+    }) {
         const checkoutUrl = `${host}/${org}/${repo}`;
         const sshCheckoutUrl = `git@${host}:${org}/${repo}`;
         const branch = commitBranch || pipelineBranch;
         const checkoutRef = prReference ? branch : sha;
-        const gitWrapper = '$(if git --version > /dev/null 2>&1; ' +
-            "then echo 'eval'; " +
-            "else echo 'sd-step exec core/git'; fi)";
+        const gitWrapper =
+            "$(if git --version > /dev/null 2>&1; then echo 'eval'; else echo 'sd-step exec core/git'; fi)";
         const command = [];
 
         // Checkout config pipeline if this is a child pipeline
         if (parentConfig) {
-            const parentCheckoutUrl = `${parentConfig.host}/${parentConfig.org}/`
-                + `${parentConfig.repo}`; // URL for https
-            const parentSshCheckoutUrl = `git@${parentConfig.host}:`
-                + `${parentConfig.org}/${parentConfig.repo}`; // URL for ssh
+            const parentCheckoutUrl = `${parentConfig.host}/${parentConfig.org}/${parentConfig.repo}`; // URL for https
+            const parentSshCheckoutUrl = `git@${parentConfig.host}:${parentConfig.org}/${parentConfig.repo}`; // URL for ssh
             const parentBranch = parentConfig.branch;
             const externalConfigDir = '$SD_ROOT_DIR/config';
 
-            command.push('if [ ! -z $SCM_CLONE_TYPE ] && [ $SCM_CLONE_TYPE = ssh ]; ' +
-                `then export CONFIG_URL=${parentSshCheckoutUrl}; ` +
-                'elif [ ! -z $SCM_USERNAME ] && [ ! -z $SCM_ACCESS_TOKEN ]; ' +
-                'then export CONFIG_URL=https://$SCM_USERNAME:$SCM_ACCESS_TOKEN@'
-                    + `${parentCheckoutUrl}; ` +
-                `else export CONFIG_URL=https://${parentCheckoutUrl}; fi`);
+            command.push(
+                'if [ ! -z $SCM_CLONE_TYPE ] && [ $SCM_CLONE_TYPE = ssh ]; ' +
+                    `then export CONFIG_URL=${parentSshCheckoutUrl}; ` +
+                    'elif [ ! -z $SCM_USERNAME ] && [ ! -z $SCM_ACCESS_TOKEN ]; ' +
+                    'then export CONFIG_URL=https://$SCM_USERNAME:$SCM_ACCESS_TOKEN@' +
+                    `${parentCheckoutUrl}; ` +
+                    `else export CONFIG_URL=https://${parentCheckoutUrl}; fi`
+            );
 
             command.push(`export SD_CONFIG_DIR=${externalConfigDir}`);
 
             // Git clone
             command.push(`echo 'Cloning external config repo ${parentCheckoutUrl}'`);
-            command.push('if [ ! -z $GIT_SHALLOW_CLONE ] && [ $GIT_SHALLOW_CLONE = false ]; '
-                  + `then ${gitWrapper} `
-                  + `"git clone --recursive --quiet --progress --branch '${parentBranch}' `
-                  + '$CONFIG_URL $SD_CONFIG_DIR"; '
-                  + `else ${gitWrapper} `
-                  + '"git clone --depth=50 --no-single-branch --recursive --quiet --progress '
-                  + `--branch '${parentBranch}' $CONFIG_URL $SD_CONFIG_DIR"; fi`);
+            command.push(
+                'if [ ! -z $GIT_SHALLOW_CLONE ] && [ $GIT_SHALLOW_CLONE = false ]; ' +
+                    `then ${gitWrapper} ` +
+                    `"git clone --recursive --quiet --progress --branch '${parentBranch}' ` +
+                    '$CONFIG_URL $SD_CONFIG_DIR"; ' +
+                    `else ${gitWrapper} ` +
+                    '"git clone --depth=50 --no-single-branch --recursive --quiet --progress ' +
+                    `--branch '${parentBranch}' $CONFIG_URL $SD_CONFIG_DIR"; fi`
+            );
 
             // Reset to SHA
-            command.push(`${gitWrapper} "git -C $SD_CONFIG_DIR reset --hard `
-                + `${parentConfig.sha}"`);
+            command.push(`${gitWrapper} "git -C $SD_CONFIG_DIR reset --hard ${parentConfig.sha}"`);
             command.push(`echo Reset external config repo to ${parentConfig.sha}`);
         }
 
@@ -807,24 +825,30 @@ class BitbucketScm extends Scm {
             if (hoek.reach(this.config, 'readOnly.cloneType') === 'ssh') {
                 command.push(`export SCM_URL=${sshCheckoutUrl}`);
             } else {
-                command.push('if [ ! -z $SCM_USERNAME ] && [ ! -z $SCM_ACCESS_TOKEN ]; ' +
-                    `then export SCM_URL=https://$SCM_USERNAME:$SCM_ACCESS_TOKEN@${checkoutUrl}; ` +
-                    `else export SCM_URL=https://${checkoutUrl}; fi`);
+                command.push(
+                    'if [ ! -z $SCM_USERNAME ] && [ ! -z $SCM_ACCESS_TOKEN ]; ' +
+                        `then export SCM_URL=https://$SCM_USERNAME:$SCM_ACCESS_TOKEN@${checkoutUrl}; ` +
+                        `else export SCM_URL=https://${checkoutUrl}; fi`
+                );
             }
         } else {
-            command.push('if [ ! -z $SCM_CLONE_TYPE ] && [ $SCM_CLONE_TYPE = ssh ]; ' +
-                `then export SCM_URL=${sshCheckoutUrl}; ` +
-                'elif [ ! -z $SCM_USERNAME ] && [ ! -z $SCM_ACCESS_TOKEN ]; ' +
-                `then export SCM_URL=https://$SCM_USERNAME:$SCM_ACCESS_TOKEN@${checkoutUrl}; ` +
-                `else export SCM_URL=https://${checkoutUrl}; fi`);
+            command.push(
+                'if [ ! -z $SCM_CLONE_TYPE ] && [ $SCM_CLONE_TYPE = ssh ]; ' +
+                    `then export SCM_URL=${sshCheckoutUrl}; ` +
+                    'elif [ ! -z $SCM_USERNAME ] && [ ! -z $SCM_ACCESS_TOKEN ]; ' +
+                    `then export SCM_URL=https://$SCM_USERNAME:$SCM_ACCESS_TOKEN@${checkoutUrl}; ` +
+                    `else export SCM_URL=https://${checkoutUrl}; fi`
+            );
         }
-        command.push('if [ ! -z $GIT_SHALLOW_CLONE ] && [ $GIT_SHALLOW_CLONE = false ]; '
-              + `then ${gitWrapper} `
-              + `"git clone --recursive --quiet --progress --branch '${branch}' `
-              + '$SCM_URL $SD_SOURCE_DIR"; '
-              + `else ${gitWrapper} `
-              + '"git clone --depth=50 --no-single-branch --recursive --quiet --progress '
-              + `--branch '${branch}' $SCM_URL $SD_SOURCE_DIR"; fi`);
+        command.push(
+            'if [ ! -z $GIT_SHALLOW_CLONE ] && [ $GIT_SHALLOW_CLONE = false ]; ' +
+                `then ${gitWrapper} ` +
+                `"git clone --recursive --quiet --progress --branch '${branch}' ` +
+                '$SCM_URL $SD_SOURCE_DIR"; ' +
+                `else ${gitWrapper} ` +
+                '"git clone --depth=50 --no-single-branch --recursive --quiet --progress ' +
+                `--branch '${branch}' $SCM_URL $SD_SOURCE_DIR"; fi`
+        );
 
         // Reset to Sha
         command.push(`echo 'Reset to SHA ${checkoutRef}'`);
@@ -863,7 +887,7 @@ class BitbucketScm extends Scm {
      * @return {Promise}
      */
     async _getOpenedPRs({ scmUri }) {
-        const repoId = getScmUriParts(scmUri).repoId;
+        const { repoId } = getScmUriParts(scmUri);
         const token = await this._getToken();
 
         const response = await this.breaker.runCommand({
@@ -895,7 +919,7 @@ class BitbucketScm extends Scm {
      * @return {Promise}
      */
     async _getPrInfo({ scmUri, prNum }) {
-        const repoId = getScmUriParts(scmUri).repoId;
+        const { repoId } = getScmUriParts(scmUri);
         const token = await this._getToken();
 
         const response = await this.breaker.runCommand({
@@ -952,17 +976,17 @@ class BitbucketScm extends Scm {
      * @return {Promise}
      */
     _canHandleWebhook(headers, payload) {
-        return this._parseHook(headers, payload).then((parseResult) => {
-            if (parseResult === null) {
-                return Promise.resolve(false);
-            }
+        return this._parseHook(headers, payload)
+            .then(parseResult => {
+                if (parseResult === null) {
+                    return Promise.resolve(false);
+                }
 
-            const [, checkoutUrlHost] = parseResult.checkoutUrl.split('//');
+                const [, checkoutUrlHost] = parseResult.checkoutUrl.split('//');
 
-            return Promise.resolve(checkoutUrlHost.startsWith(this.hostname));
-        }).catch(() => (
-            Promise.resolve(false)
-        ));
+                return Promise.resolve(checkoutUrlHost.startsWith(this.hostname));
+            })
+            .catch(() => Promise.resolve(false));
     }
 
     /**
@@ -982,8 +1006,9 @@ class BitbucketScm extends Scm {
             auth: {
                 bearer: token
             },
-            url: `${API_URL_V2}/repositories/${config.repoId}`
-                + `/refs/branches?pagelen=${BRANCH_PAGE_SIZE}&page=${config.page}`
+            url:
+                `${API_URL_V2}/repositories/${config.repoId}` +
+                `/refs/branches?pagelen=${BRANCH_PAGE_SIZE}&page=${config.page}`
         });
 
         let branches = hoek.reach(response, 'body.values');
@@ -1024,7 +1049,7 @@ class BitbucketScm extends Scm {
     async _getToken() {
         // make sure our token is not yet expire. we will allow a 5s buffer in case there is a discrepency
         // in the time of our system and bitbucket or to account for in network time
-        if (this.expiresIn < (new Date()).getTime() - 5000) {
+        if (this.expiresIn < new Date().getTime() - 5000) {
             // time to refresh the token to get a new token
             await this._refreshToken();
         }
@@ -1073,7 +1098,7 @@ class BitbucketScm extends Scm {
         this.token = body.access_token;
         this.refreshToken = body.refresh_token;
         // convert the expires in to a microsecond timestamp from a # of seconds value
-        this.expiresIn = (new Date()).getTime() + (body.expires_in * 1000);
+        this.expiresIn = new Date().getTime() + body.expires_in * 1000;
     }
 }
 
