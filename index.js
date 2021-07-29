@@ -2,13 +2,13 @@
 
 'use strict';
 
-const Fusebox = require('circuit-fuses').breaker;
+const Breaker = require('circuit-fuses').breaker;
 const Scm = require('screwdriver-scm-base');
 const hoek = require('@hapi/hoek');
 const joi = require('joi');
 const Path = require('path');
 const Url = require('url');
-const request = require('request');
+const request = require('screwdriver-request');
 const schema = require('screwdriver-data-schema');
 const API_URL_V2 = 'https://api.bitbucket.org/2.0';
 const REPO_URL = `${API_URL_V2}/repositories`;
@@ -27,37 +27,6 @@ const STATE_MAP = {
     ABORTED: 'STOPPED'
 };
 const WEBHOOK_PAGE_SIZE = 30;
-
-/**
- * Check the status code of the server's response.
- *
- * If there was an error encountered with the request, this will format a human-readable
- * error message.
- * @method checkResponseError
- * @param  {HTTPResponse}   response                               HTTP Response from `request` call
- * @param  {Number}         response.statusCode                    HTTP status code of the HTTP request
- * @param  {String}         [response.body.error.message]          Error message from the server
- * @param  {String}         [response.body.error.detail.required]  Error resolution message
- * @return {Promise}                                               Resolves when no error encountered
- *                                                                 Rejects when status code is non-200
- */
-function checkResponseError(response) {
-    if (response.statusCode >= 200 && response.statusCode < 300) {
-        return;
-    }
-
-    const errorMessage = hoek.reach(response, 'body.error.message', {
-        default: `SCM service unavailable (${response.statusCode}).`
-    });
-    const errorReason = hoek.reach(response, 'body.error.detail', {
-        default: JSON.stringify(response.body)
-    });
-
-    const error = new Error(`${errorMessage} Reason "${errorReason}"`);
-
-    error.status = response.statusCode;
-    throw error;
-}
 
 /**
  * Get repo information
@@ -101,6 +70,36 @@ function getScmUriParts(scmUri) {
 }
 
 class BitbucketScm extends Scm {
+    /**
+     * Bitbucket command to run
+     * @method _gitlabCommand
+     * @param  {Object}      options              An object that tells what command & params to run
+     * @param  {String}      options.caller       Name of method that is making the request
+     * @param  {Object}      [options.json]       Body for request to make
+     * @param  {String}      options.method       Bitbucket method. For example: get
+     * @param  {String}      options.route        Route for gitlab.request()
+     * @param  {String}      options.token        Bitbucket token used for authentication of requests
+     * @param  {Function}    callback             Callback function from gitlab API
+     */
+    _bitbucketCommand(options, callback) {
+        const config = options;
+
+        // Everything else goes into context
+        config.context = {
+            caller: options.caller,
+            token: options.token
+        };
+        delete config.caller;
+        delete config.token;
+
+        request(config)
+            .then(function cb() {
+                // Use "function" (not "arrow function") for getting "arguments"
+                callback(null, ...arguments);
+            })
+            .catch(err => callback(err));
+    }
+
     /**
      * Constructor for Scm
      * @method constructor
@@ -155,7 +154,13 @@ class BitbucketScm extends Scm {
             'Invalid config for Bitbucket'
         );
 
-        this.breaker = new Fusebox(request, this.config.fusebox);
+        // eslint-disable-next-line no-underscore-dangle
+        this.breaker = new Breaker(this._bitbucketCommand.bind(this), {
+            // Do not retry when there is a 4XX error
+            shouldRetry: err => err && err.status && !(err.status >= 400 && err.status < 500),
+            retry: this.config.fusebox.retry,
+            breaker: this.config.fusebox.breaker
+        });
 
         // TODO: set fixed value temporarily.
         // need to change if the other bitbucket host is supported.
@@ -202,15 +207,11 @@ class BitbucketScm extends Scm {
     async _findWebhook({ page, repoId, token: configToken, url }) {
         const token = await this._getToken();
         const response = await this.breaker.runCommand({
-            json: true,
             method: 'GET',
-            auth: {
-                bearer: token
-            },
-            url: `${API_URL_V2}/repositories/${repoId}/hooks?pagelen=30&page=${page}`
+            token,
+            caller: '_findWebhook',
+            url: `${REPO_URL}/${repoId}/hooks?pagelen=30&page=${page}`
         });
-
-        checkResponseError(response);
 
         const hooks = response.body;
         const result = hooks.values.find(webhook => webhook.url === url);
@@ -244,7 +245,7 @@ class BitbucketScm extends Scm {
      */
     _createWebhook({ hookInfo, repoId, token, url, actions }) {
         const params = {
-            body: {
+            json: {
                 description: 'Screwdriver-CD build trigger',
                 url,
                 active: true,
@@ -259,12 +260,10 @@ class BitbucketScm extends Scm {
                           ]
                         : actions
             },
-            json: true,
             method: 'POST',
-            auth: {
-                bearer: token
-            },
-            url: `${API_URL_V2}/repositories/${repoId}/hooks`
+            token,
+            caller: '_createWebhook',
+            url: `${REPO_URL}/${repoId}/hooks`
         };
 
         if (hookInfo) {
@@ -272,7 +271,7 @@ class BitbucketScm extends Scm {
             params.method = 'PUT';
         }
 
-        return this.breaker.runCommand(params).then(checkResponseError);
+        return this.breaker.runCommand(params);
     }
 
     /**
@@ -330,10 +329,8 @@ class BitbucketScm extends Scm {
         const options = {
             url: branchUrl,
             method: 'GET',
-            json: true,
-            auth: {
-                bearer: token
-            }
+            token,
+            caller: '_parseUrl'
         };
 
         if (hostname !== this.hostname) {
@@ -429,10 +426,8 @@ class BitbucketScm extends Scm {
         const options = {
             url: `${USER_URL}/${encodeURIComponent(username)}`,
             method: 'GET',
-            json: true,
-            auth: {
-                bearer: token
-            }
+            token,
+            caller: '_decorateAuthor'
         };
 
         const response = await this.breaker.runCommand(options);
@@ -478,10 +473,8 @@ class BitbucketScm extends Scm {
         const options = {
             url: `${REPO_URL}/${repoId}`,
             method: 'GET',
-            json: true,
-            auth: {
-                bearer: token
-            }
+            token,
+            caller: '_decorateUrl'
         };
 
         const response = await this.breaker.runCommand(options);
@@ -514,10 +507,8 @@ class BitbucketScm extends Scm {
         const options = {
             url: `${REPO_URL}/${scm.repoId}/commit/${sha}`,
             method: 'GET',
-            json: true,
-            auth: {
-                bearer: token
-            }
+            token,
+            caller: '_decorateCommit'
         };
 
         const response = await this.breaker.runCommand(options);
@@ -558,15 +549,15 @@ class BitbucketScm extends Scm {
         const options = {
             url: branchUrl,
             method: 'GET',
-            json: true,
-            auth: {
-                bearer: token
-            }
+            token,
+            caller: '_getCommitSha'
         };
 
         const response = await this.breaker.runCommand(options);
 
-        checkResponseError(response);
+        if (response.statusCode !== 200) {
+            throw new Error(`STATUS CODE ${response.statusCode}: ${JSON.stringify(response.body)}`);
+        }
 
         return response.body.target.hash;
     }
@@ -579,7 +570,7 @@ class BitbucketScm extends Scm {
      * @param  {String}   config.type            Can be 'pr' or 'repo'
      * @param  {Object}   config.webhookPayload  The webhook payload received from the
      *                                           SCM service.
-     * @param  {String}   config.token           Service token to authenticate with Github
+     * @param  {String}   config.token           Service token to authenticate with Bitbucket
      * @return {Promise}                      Resolves to the content of the file
      */
     _getChangedFiles() {
@@ -600,15 +591,13 @@ class BitbucketScm extends Scm {
         const { branch: branchFromScmUri, repoId, rootDir } = getScmUriParts(scmUri);
         const branch = ref || branchFromScmUri;
         const fullPath = rootDir ? Path.join(rootDir, path) : path;
-        const fileUrl = `${API_URL_V2}/repositories/${repoId}/src/${branch}/${fullPath}`;
+        const fileUrl = `${REPO_URL}/${repoId}/src/${branch}/${fullPath}`;
         const token = await this._getToken();
         const options = {
             url: fileUrl,
             method: 'GET',
-            json: true,
-            auth: {
-                bearer: token
-            }
+            token,
+            caller: '_getFile'
         };
 
         const response = await this.breaker.runCommand(options);
@@ -634,25 +623,19 @@ class BitbucketScm extends Scm {
         const token = await this._getToken();
 
         // First, check to see if the repository exists
-        await this.breaker
-            .runCommand({
-                url: `${API_URL_V2}/repositories/${owner}/${uuid}`,
-                method: 'GET',
-                json: true,
-                auth: {
-                    bearer: token
-                }
-            })
-            .then(checkResponseError);
+        await this.breaker.runCommand({
+            url: `${REPO_URL}/${owner}/${uuid}`,
+            method: 'GET',
+            token,
+            caller: '_getPermissions'
+        });
 
         const getPerm = async desiredAccess => {
             const options = {
-                url: `${API_URL_V2}/repositories/${owner}?q=uuid%3D%22${uuid}%22`,
+                url: `${REPO_URL}/${owner}?q=uuid%3D%22${uuid}%22`,
                 method: 'GET',
-                json: true,
-                auth: {
-                    bearer: token
-                }
+                token,
+                caller: '_getPermissions'
             };
 
             if (desiredAccess === 'admin') {
@@ -705,16 +688,14 @@ class BitbucketScm extends Scm {
         const options = {
             url: `${REPO_URL}/${scm.repoId}/commit/${sha}/statuses/build`,
             method: 'POST',
-            json: true,
-            body: {
+            json: {
                 url,
                 state: STATE_MAP[buildStatus],
                 key: sha,
                 description: context
             },
-            auth: {
-                bearer: decodeURIComponent(token)
-            }
+            token: decodeURIComponent(token),
+            caller: '_updateCommitStatus'
         };
 
         return this.breaker.runCommand(options).then(response => {
@@ -891,15 +872,11 @@ class BitbucketScm extends Scm {
         const token = await this._getToken();
 
         const response = await this.breaker.runCommand({
-            url: `${API_URL_V2}/repositories/${repoId}/pullrequests`,
+            url: `${REPO_URL}/${repoId}/pullrequests`,
             method: 'GET',
-            json: true,
-            auth: {
-                bearer: token
-            }
+            token,
+            caller: '_getOpenedPRs'
         });
-
-        checkResponseError(response);
 
         const prList = response.body.values;
 
@@ -923,15 +900,11 @@ class BitbucketScm extends Scm {
         const token = await this._getToken();
 
         const response = await this.breaker.runCommand({
-            url: `${API_URL_V2}/repositories/${repoId}/pullrequests/${prNum}`,
+            url: `${REPO_URL}/${repoId}/pullrequests/${prNum}`,
             method: 'GET',
-            json: true,
-            auth: {
-                bearer: token
-            }
+            token,
+            caller: '_getPrInfo'
         });
-
-        checkResponseError(response);
 
         const pr = response.body;
 
@@ -1001,14 +974,10 @@ class BitbucketScm extends Scm {
     async _findBranches(config) {
         const token = await this._getToken();
         const response = await this.breaker.runCommand({
-            json: true,
             method: 'GET',
-            auth: {
-                bearer: token
-            },
-            url:
-                `${API_URL_V2}/repositories/${config.repoId}` +
-                `/refs/branches?pagelen=${BRANCH_PAGE_SIZE}&page=${config.page}`
+            token,
+            caller: '_findBranches',
+            url: `${REPO_URL}/${config.repoId}/refs/branches?pagelen=${BRANCH_PAGE_SIZE}&page=${config.page}`
         });
 
         let branches = hoek.reach(response, 'body.values');
@@ -1024,11 +993,11 @@ class BitbucketScm extends Scm {
     }
 
     /**
-     * Get branch list from the Github repository
+     * Get branch list from the Bitbucket repository
      * @async  _getBranchList
      * @param  {Object}     config
      * @param  {String}     config.scmUri      The SCM URI to get branch list
-     * @param  {String}     config.token       Service token to authenticate with Github
+     * @param  {String}     config.token       Service token to authenticate with Bitbucket
      * @return {Promise}                       Resolves when complete
      */
     async _getBranchList({ scmUri, token }) {
@@ -1066,12 +1035,11 @@ class BitbucketScm extends Scm {
     async _refreshToken() {
         const params = {
             method: 'POST',
-            auth: {
-                user: this.config.oauthClientId,
-                pass: this.config.oauthClientSecret
-            },
+            username: this.config.oauthClientId,
+            password: this.config.oauthClientSecret,
             url: `https://${this.hostname}/site/oauth2/access_token`,
-            form: {}
+            form: {},
+            caller: '_refreshToken'
         };
 
         // we will have to request for a new token if one is not yet generated

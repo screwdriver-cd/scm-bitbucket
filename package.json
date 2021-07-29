@@ -50,8 +50,8 @@
     "@hapi/hoek": "^9.2.0",
     "circuit-fuses": "^4.0.6",
     "joi": "^17.2.1",
-    "request": "^2.88.2",
     "screwdriver-data-schema": "^21.6.1",
+    "screwdriver-request": "^1.0.0",
     "screwdriver-scm-base": "^7.2.1"
   }
 }

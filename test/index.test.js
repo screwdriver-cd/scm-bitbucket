@@ -40,7 +40,7 @@ describe('index', function() {
     beforeEach(() => {
         requestMock = sinon.stub();
 
-        mockery.registerMock('request', requestMock);
+        mockery.registerMock('screwdriver-request', requestMock);
 
         /* eslint-disable global-require */
         BitbucketScm = require('../index');
@@ -125,12 +125,12 @@ describe('index', function() {
             expectedOptions = {
                 url: `${apiUrl}/mynewbranch`,
                 method: 'GET',
-                json: true,
-                auth: {
-                    bearer: systemToken
+                context: {
+                    token: systemToken,
+                    caller: '_parseUrl'
                 }
             };
-            requestMock.yieldsAsync(null, fakeResponse, fakeResponse.body);
+            requestMock.resolves(fakeResponse);
         });
 
         it('resolves to the correct parsed url for ssh', () => {
@@ -139,9 +139,9 @@ describe('index', function() {
             expectedOptions = {
                 url: `${apiUrl}/master`,
                 method: 'GET',
-                json: true,
-                auth: {
-                    bearer: systemToken
+                context: {
+                    token: systemToken,
+                    caller: '_parseUrl'
                 }
             };
 
@@ -162,9 +162,9 @@ describe('index', function() {
             expectedOptions = {
                 url: `${apiUrl}/master`,
                 method: 'GET',
-                json: true,
-                auth: {
-                    bearer: systemToken
+                context: {
+                    token: systemToken,
+                    caller: '_parseUrl'
                 }
             };
 
@@ -255,7 +255,7 @@ describe('index', function() {
         it('rejects if request fails', () => {
             const err = new Error('Bitbucket API error');
 
-            requestMock.yieldsAsync(err);
+            requestMock.rejects(err);
 
             return scm
                 .parseUrl({
@@ -280,7 +280,7 @@ describe('index', function() {
                 }
             };
 
-            requestMock.yieldsAsync(null, fakeResponse, fakeResponse.body);
+            requestMock.resolves(fakeResponse);
 
             return scm
                 .parseUrl({
@@ -304,7 +304,7 @@ describe('index', function() {
                 }
             };
 
-            requestMock.yieldsAsync(null, fakeResponse, fakeResponse.body);
+            requestMock.resolves(fakeResponse);
 
             return scm
                 .parseUrl({
@@ -478,9 +478,9 @@ describe('index', function() {
         const expectedOptions = {
             url: apiUrl,
             method: 'GET',
-            json: true,
-            auth: {
-                bearer: systemToken
+            context: {
+                token: systemToken,
+                caller: '_decorateAuthor'
             }
         };
         let fakeResponse;
@@ -501,7 +501,7 @@ describe('index', function() {
                     }
                 }
             };
-            requestMock.yieldsAsync(null, fakeResponse, fakeResponse.body);
+            requestMock.resolves(fakeResponse);
         });
 
         it('resolves to correct decorated author', () => {
@@ -533,7 +533,7 @@ describe('index', function() {
                 }
             };
 
-            requestMock.yieldsAsync(null, fakeResponse, fakeResponse.body);
+            requestMock.resolves(fakeResponse);
 
             const expected = {
                 url: '',
@@ -544,9 +544,9 @@ describe('index', function() {
             const expectedFabricatedOptions = {
                 url: `${API_URL_V2}/users/batman`,
                 method: 'GET',
-                json: true,
-                auth: {
-                    bearer: systemToken
+                context: {
+                    token: systemToken,
+                    caller: '_decorateAuthor'
                 }
             };
 
@@ -571,7 +571,7 @@ describe('index', function() {
                 }
             };
 
-            requestMock.yieldsAsync(null, fakeResponse, fakeResponse.body);
+            requestMock.resolves(fakeResponse);
 
             return scm
                 .decorateAuthor({
@@ -590,7 +590,7 @@ describe('index', function() {
         it('rejects if fails', () => {
             const err = new Error('Bitbucket API error');
 
-            requestMock.yieldsAsync(err);
+            requestMock.rejects(err);
 
             return scm
                 .decorateAuthor({
@@ -607,15 +607,15 @@ describe('index', function() {
         });
     });
 
-    describe('decorateUrl', () => {
+    describe('_decorateUrl', () => {
         const apiUrl = `${API_URL_V2}/repositories/repoId`;
         const selfLink = 'https://bitbucket.org/d2lam2/test';
         const repoOptions = {
             url: apiUrl,
             method: 'GET',
-            json: true,
-            auth: {
-                bearer: systemToken
+            context: {
+                token: systemToken,
+                caller: '_decorateUrl'
             }
         };
         let fakeResponse;
@@ -636,12 +636,12 @@ describe('index', function() {
             expectedOptions = {
                 url: apiUrl,
                 method: 'GET',
-                json: true,
-                auth: {
-                    bearer: systemToken
+                context: {
+                    token: systemToken,
+                    caller: '_decorateUrl'
                 }
             };
-            requestMock.withArgs(repoOptions).yieldsAsync(null, fakeResponse, fakeResponse.body);
+            requestMock.withArgs(repoOptions).resolves(fakeResponse);
         });
 
         it('resolves to correct decorated url object', () => {
@@ -674,7 +674,7 @@ describe('index', function() {
                 }
             };
 
-            requestMock.withArgs(repoOptions).yieldsAsync(null, fakeResponse, fakeResponse.body);
+            requestMock.withArgs(repoOptions).resolves(fakeResponse);
 
             return scm
                 .decorateUrl({
@@ -693,7 +693,7 @@ describe('index', function() {
         it('rejects if fails', () => {
             const err = new Error('Bitbucket API error');
 
-            requestMock.withArgs(repoOptions).yieldsAsync(err);
+            requestMock.withArgs(repoOptions).rejects(err);
 
             return scm
                 .decorateUrl({
@@ -710,7 +710,7 @@ describe('index', function() {
         });
     });
 
-    describe('decorateCommit', () => {
+    describe('_decorateCommit', () => {
         const sha = '1111111111111111111111111111111111111111';
         const repoUrl = `${API_URL_V2}/repositories/repoId/commit/${sha}`;
         const authorUrl = `${API_URL_V2}/users/%7Buuid%7D`;
@@ -718,17 +718,17 @@ describe('index', function() {
         const repoOptions = {
             url: repoUrl,
             method: 'GET',
-            json: true,
-            auth: {
-                bearer: systemToken
+            context: {
+                token: systemToken,
+                caller: '_decorateCommit'
             }
         };
         const authorOptions = {
             url: authorUrl,
             method: 'GET',
-            json: true,
-            auth: {
-                bearer: systemToken
+            context: {
+                token: systemToken,
+                caller: '_decorateAuthor'
             }
         };
         let fakeResponse;
@@ -766,8 +766,8 @@ describe('index', function() {
                     }
                 }
             };
-            requestMock.withArgs(repoOptions).yieldsAsync(null, fakeResponse, fakeResponse.body);
-            requestMock.withArgs(authorOptions).yieldsAsync(null, fakeAuthorResponse, fakeAuthorResponse.body);
+            requestMock.withArgs(repoOptions).resolves(fakeResponse);
+            requestMock.withArgs(authorOptions).resolves(fakeAuthorResponse);
         });
 
         it('resolves to correct decorated object', () => {
@@ -805,7 +805,7 @@ describe('index', function() {
                 }
             };
 
-            requestMock.withArgs(repoOptions).yieldsAsync(null, fakeResponse, fakeResponse.body);
+            requestMock.withArgs(repoOptions).resolves(fakeResponse);
 
             return scm
                 .decorateCommit({
@@ -825,7 +825,7 @@ describe('index', function() {
         it('rejects if fails', () => {
             const err = new Error('Bitbucket API error');
 
-            requestMock.withArgs(repoOptions).yieldsAsync(err);
+            requestMock.withArgs(repoOptions).rejects(err);
 
             return scm
                 .decorateCommit({
@@ -843,15 +843,15 @@ describe('index', function() {
         });
     });
 
-    describe('getCommitSha', () => {
+    describe('_getCommitSha', () => {
         const apiUrl = `${API_URL_V2}/repositories/repoId/refs/branches/branchName`;
         const scmUri = 'hostName:repoId:branchName';
         const expectedOptions = {
             url: apiUrl,
             method: 'GET',
-            json: true,
-            auth: {
-                bearer: systemToken
+            context: {
+                token: systemToken,
+                caller: '_getCommitSha'
             }
         };
         let fakeResponse;
@@ -865,7 +865,7 @@ describe('index', function() {
                     }
                 }
             };
-            requestMock.yieldsAsync(null, fakeResponse, fakeResponse.body);
+            requestMock.resolves(fakeResponse);
         });
 
         it('resolves to correct commit sha without prNum', () =>
@@ -884,13 +884,13 @@ describe('index', function() {
             const prExpectedOptions = {
                 url: `${API_URL_V2}/repositories/repoId/pullrequests/${prNum}`,
                 method: 'GET',
-                json: true,
-                auth: {
-                    bearer: systemToken
+                context: {
+                    token: systemToken,
+                    caller: '_getPrInfo'
                 }
             };
 
-            requestMock.yieldsAsync(null, {
+            requestMock.resolves({
                 body: {
                     links: {
                         html: {
@@ -933,7 +933,7 @@ describe('index', function() {
                 }
             };
 
-            requestMock.yieldsAsync(null, fakeResponse, fakeResponse.body);
+            requestMock.resolves(fakeResponse);
 
             return scm
                 .getCommitSha({
@@ -944,16 +944,17 @@ describe('index', function() {
                     assert.fail('Should not get here');
                 })
                 .catch(error => {
-                    assert.calledWith(requestMock, expectedOptions);
-                    assert.match(error.message, 'Resource not found Reason "There is no API hosted at this URL"');
-                    assert.match(error.status, 404);
+                    assert.match(
+                        error.message,
+                        'STATUS CODE 404: {"error":{"message":"Resource not found","detail":"There is no API hosted at this URL"}}'
+                    );
                 });
         });
 
         it('rejects if fails', () => {
             const err = new Error('Bitbucket API error');
 
-            requestMock.yieldsAsync(err);
+            requestMock.rejects(err);
 
             return scm
                 .getCommitSha({
@@ -970,7 +971,7 @@ describe('index', function() {
         });
     });
 
-    describe('getFile', () => {
+    describe('_getFile', () => {
         const apiUrl = `${API_URL_V2}/repositories/repoId/src/branchName/path/to/file.txt`;
         let expectedOptions;
         let fakeResponse;
@@ -981,16 +982,16 @@ describe('index', function() {
             expectedOptions = {
                 url: apiUrl,
                 method: 'GET',
-                json: true,
-                auth: {
-                    bearer: systemToken
+                context: {
+                    token: systemToken,
+                    caller: '_getFile'
                 }
             };
             fakeResponse = {
                 statusCode: 200,
                 body: 'dataValue'
             };
-            requestMock.yieldsAsync(null, fakeResponse, fakeResponse.body);
+            requestMock.resolves(fakeResponse);
             scmUri = 'hostName:repoId:branchName';
             params = {
                 scmUri,
@@ -1033,7 +1034,7 @@ describe('index', function() {
                 }
             };
 
-            requestMock.yieldsAsync(null, fakeResponse, fakeResponse.body);
+            requestMock.resolves(fakeResponse);
 
             return scm
                 .getFile(params)
@@ -1049,7 +1050,7 @@ describe('index', function() {
         it('rejects if fails', () => {
             const err = new Error('Bitbucket API error');
 
-            requestMock.yieldsAsync(err);
+            requestMock.rejects(err);
 
             return scm
                 .getFile(params)
@@ -1063,46 +1064,46 @@ describe('index', function() {
         });
     });
 
-    describe('getPermissions', () => {
+    describe('_getPermissions', () => {
         const repos = [
             {
                 url: `${API_URL_V2}/repositories/repoIdPrefix/repoIdSuffix`,
                 method: 'GET',
-                json: true,
-                auth: {
-                    bearer: systemToken
+                context: {
+                    token: systemToken,
+                    caller: '_getPermissions'
                 }
             },
             {
                 url: `${API_URL_V2}/repositories/repoIdPrefix/repoIdSuffix1`,
                 method: 'GET',
-                json: true,
-                auth: {
-                    bearer: systemToken
+                context: {
+                    token: systemToken,
+                    caller: '_getPermissions'
                 }
             },
             {
                 url: `${API_URL_V2}/repositories/repoIdPrefix/repoIdSuffix2`,
                 method: 'GET',
-                json: true,
-                auth: {
-                    bearer: systemToken
+                context: {
+                    token: systemToken,
+                    caller: '_getPermissions'
                 }
             },
             {
                 url: `${API_URL_V2}/repositories/repoIdPrefix/repoIdSuffix3`,
                 method: 'GET',
-                json: true,
-                auth: {
-                    bearer: systemToken
+                context: {
+                    token: systemToken,
+                    caller: '_getPermissions'
                 }
             },
             {
                 url: `${API_URL_V2}/repositories/repoIdPrefix/fake`,
                 method: 'GET',
-                json: true,
-                auth: {
-                    bearer: systemToken
+                context: {
+                    token: systemToken,
+                    caller: '_getPermissions'
                 }
             }
         ];
@@ -1110,42 +1111,42 @@ describe('index', function() {
         const pull = {
             url: `${API_URL_V2}/repositories/repoIdPrefix?q=uuid%3D%22repoIdSuffix%22`,
             method: 'GET',
-            json: true,
-            auth: {
-                bearer: systemToken
+            context: {
+                token: systemToken,
+                caller: '_getPermissions'
             }
         };
         const pulls = [
             {
                 url: `${API_URL_V2}/repositories/repoIdPrefix?q=uuid%3D%22repoIdSuffix%22`,
                 method: 'GET',
-                json: true,
-                auth: {
-                    bearer: systemToken
+                context: {
+                    token: systemToken,
+                    caller: '_getPermissions'
                 }
             },
             {
                 url: `${API_URL_V2}/repositories/repoIdPrefix?q=uuid%3D%22repoIdSuffix1%22`,
                 method: 'GET',
-                json: true,
-                auth: {
-                    bearer: systemToken
+                context: {
+                    token: systemToken,
+                    caller: '_getPermissions'
                 }
             },
             {
                 url: `${API_URL_V2}/repositories/repoIdPrefix?q=uuid%3D%22repoIdSuffix2%22`,
                 method: 'GET',
-                json: true,
-                auth: {
-                    bearer: systemToken
+                context: {
+                    token: systemToken,
+                    caller: '_getPermissions'
                 }
             },
             {
                 url: `${API_URL_V2}/repositories/repoIdPrefix?q=uuid%3D%22repoIdSuffix3%22`,
                 method: 'GET',
-                json: true,
-                auth: {
-                    bearer: systemToken
+                context: {
+                    token: systemToken,
+                    caller: '_getPermissions'
                 }
             }
         ];
@@ -1153,33 +1154,33 @@ describe('index', function() {
             {
                 url: `${API_URL_V2}/repositories/repoIdPrefix?q=uuid%3D%22repoIdSuffix%22&role=contributor`,
                 method: 'GET',
-                json: true,
-                auth: {
-                    bearer: systemToken
+                context: {
+                    token: systemToken,
+                    caller: '_getPermissions'
                 }
             },
             {
                 url: `${API_URL_V2}/repositories/repoIdPrefix?q=uuid%3D%22repoIdSuffix1%22&role=contributor`,
                 method: 'GET',
-                json: true,
-                auth: {
-                    bearer: systemToken
+                context: {
+                    token: systemToken,
+                    caller: '_getPermissions'
                 }
             },
             {
                 url: `${API_URL_V2}/repositories/repoIdPrefix?q=uuid%3D%22repoIdSuffix2%22&role=contributor`,
                 method: 'GET',
-                json: true,
-                auth: {
-                    bearer: systemToken
+                context: {
+                    token: systemToken,
+                    caller: '_getPermissions'
                 }
             },
             {
                 url: `${API_URL_V2}/repositories/repoIdPrefix?q=uuid%3D%22repoIdSuffix3%22&role=contributor`,
                 method: 'GET',
-                json: true,
-                auth: {
-                    bearer: systemToken
+                context: {
+                    token: systemToken,
+                    caller: '_getPermissions'
                 }
             }
         ];
@@ -1187,33 +1188,33 @@ describe('index', function() {
             {
                 url: `${API_URL_V2}/repositories/repoIdPrefix?q=uuid%3D%22repoIdSuffix%22&role=admin`,
                 method: 'GET',
-                json: true,
-                auth: {
-                    bearer: systemToken
+                context: {
+                    token: systemToken,
+                    caller: '_getPermissions'
                 }
             },
             {
                 url: `${API_URL_V2}/repositories/repoIdPrefix?q=uuid%3D%22repoIdSuffix1%22&role=admin`,
                 method: 'GET',
-                json: true,
-                auth: {
-                    bearer: systemToken
+                context: {
+                    token: systemToken,
+                    caller: '_getPermissions'
                 }
             },
             {
                 url: `${API_URL_V2}/repositories/repoIdPrefix?q=uuid%3D%22repoIdSuffix2%22&role=admin`,
                 method: 'GET',
-                json: true,
-                auth: {
-                    bearer: systemToken
+                context: {
+                    token: systemToken,
+                    caller: '_getPermissions'
                 }
             },
             {
                 url: `${API_URL_V2}/repositories/repoIdPrefix?q=uuid%3D%22repoIdSuffix3%22&role=admin`,
                 method: 'GET',
-                json: true,
-                auth: {
-                    bearer: systemToken
+                context: {
+                    token: systemToken,
+                    caller: '_getPermissions'
                 }
             }
         ];
@@ -1269,26 +1270,26 @@ describe('index', function() {
         };
 
         beforeEach(() => {
-            requestMock.withArgs(repos[0]).yieldsAsync(null, repoResponse, repoResponse.body);
-            requestMock.withArgs(repos[1]).yieldsAsync(null, repoResponse, repoResponse.body);
-            requestMock.withArgs(repos[2]).yieldsAsync(null, repoResponse, repoResponse.body);
-            requestMock.withArgs(repos[3]).yieldsAsync(null, repoResponse, repoResponse.body);
-            requestMock.withArgs(repos[4]).yieldsAsync(null, repoNotFoundResponse, repoNotFoundResponse.body);
+            requestMock.withArgs(repos[0]).resolves(repoResponse);
+            requestMock.withArgs(repos[1]).resolves(repoResponse);
+            requestMock.withArgs(repos[2]).resolves(repoResponse);
+            requestMock.withArgs(repos[3]).resolves(repoResponse);
+            requestMock.withArgs(repos[4]).resolves(repoNotFoundResponse);
 
-            requestMock.withArgs(pulls[0]).yieldsAsync(null, repoResponse, repoResponse.body);
-            requestMock.withArgs(pulls[1]).yieldsAsync(null, readResponses[0], readResponses[0].body);
-            requestMock.withArgs(pulls[2]).yieldsAsync(null, readResponses[1], readResponses[1].body);
-            requestMock.withArgs(pulls[3]).yieldsAsync(null, readResponses[2], readResponses[2].body);
+            requestMock.withArgs(pulls[0]).resolves(repoResponse);
+            requestMock.withArgs(pulls[1]).resolves(readResponses[0]);
+            requestMock.withArgs(pulls[2]).resolves(readResponses[1]);
+            requestMock.withArgs(pulls[3]).resolves(readResponses[2]);
 
-            requestMock.withArgs(pushes[0]).yieldsAsync(null, repoResponse, repoResponse.body);
-            requestMock.withArgs(pushes[1]).yieldsAsync(null, writeResponses[0], writeResponses[0].body);
-            requestMock.withArgs(pushes[2]).yieldsAsync(null, writeResponses[1], writeResponses[1].body);
-            requestMock.withArgs(pushes[3]).yieldsAsync(null, repoResponse, repoResponse.body);
+            requestMock.withArgs(pushes[0]).resolves(repoResponse);
+            requestMock.withArgs(pushes[1]).resolves(writeResponses[0]);
+            requestMock.withArgs(pushes[2]).resolves(writeResponses[1]);
+            requestMock.withArgs(pushes[3]).resolves(repoResponse);
 
-            requestMock.withArgs(admins[0]).yieldsAsync(null, repoResponse, repoResponse.body);
-            requestMock.withArgs(admins[1]).yieldsAsync(null, adminResponse, adminResponse.body);
-            requestMock.withArgs(admins[2]).yieldsAsync(null, repoResponse, repoResponse.body);
-            requestMock.withArgs(admins[3]).yieldsAsync(null, repoResponse, repoResponse.body);
+            requestMock.withArgs(admins[0]).resolves(repoResponse);
+            requestMock.withArgs(admins[1]).resolves(adminResponse);
+            requestMock.withArgs(admins[2]).resolves(repoResponse);
+            requestMock.withArgs(admins[3]).resolves(repoResponse);
         });
 
         it('get correct admin permissions', () => {
@@ -1386,7 +1387,7 @@ describe('index', function() {
                 }
             };
 
-            requestMock.withArgs(pull).yieldsAsync(null, fakeResponse, fakeResponse.body);
+            requestMock.withArgs(pull).resolves(fakeResponse);
 
             return scm
                 .getPermissions({
@@ -1405,7 +1406,7 @@ describe('index', function() {
             const error = new Error('Bitbucket API error');
             const scmUri = 'hostName:repoIdPrefix/repoIdSuffix:branchName';
 
-            requestMock.withArgs(pull).yieldsAsync(error);
+            requestMock.withArgs(pull).rejects(error);
 
             return scm
                 .getPermissions({
@@ -1440,7 +1441,7 @@ describe('index', function() {
         });
     });
 
-    describe('updateCommitStatus', () => {
+    describe('_updateCommitStatus', () => {
         let config;
         let apiUrl;
         let fakeResponse;
@@ -1463,23 +1464,23 @@ describe('index', function() {
             expectedOptions = {
                 url: apiUrl,
                 method: 'POST',
-                json: true,
-                body: {
+                json: {
                     url: config.url,
                     state: 'SUCCESSFUL',
                     key: config.sha,
                     description: 'Screwdriver/123/main'
                 },
-                auth: {
-                    bearer: 'bearerToken' // Decoded access token
+                context: {
+                    token: 'bearerToken', // Decoded access token,
+                    caller: '_updateCommitStatus'
                 }
             };
-            requestMock.yieldsAsync(null, fakeResponse);
+            requestMock.resolves(fakeResponse);
         });
 
         it('successfully update status for PR', () => {
             config.jobName = 'PR-1';
-            expectedOptions.body.description = 'Screwdriver/123/PR';
+            expectedOptions.json.description = 'Screwdriver/123/PR';
 
             return scm.updateCommitStatus(config).then(() => {
                 assert.calledWith(requestMock, expectedOptions);
@@ -1501,7 +1502,7 @@ describe('index', function() {
                 }
             };
 
-            requestMock.yieldsAsync(null, fakeResponse, fakeResponse.body);
+            requestMock.resolves(fakeResponse);
 
             return scm
                 .updateCommitStatus(config)
@@ -1517,7 +1518,7 @@ describe('index', function() {
         it('rejects if fails', () => {
             const err = new Error('Bitbucket API error');
 
-            requestMock.yieldsAsync(err);
+            requestMock.rejects(err);
 
             return scm
                 .updateCommitStatus(config)
@@ -1678,13 +1679,13 @@ describe('index', function() {
         const scmUri = 'hostName:repoId:branchName';
 
         beforeEach(() => {
-            requestMock.yieldsAsync(null, {
+            requestMock.resolves({
                 statusCode: 200
             });
         });
 
         it('works', () => {
-            requestMock.onFirstCall().yieldsAsync(null, {
+            requestMock.onFirstCall().resolves({
                 body: {
                     values: [],
                     size: 0
@@ -1709,15 +1710,15 @@ describe('index', function() {
                 })
                 .then(() => {
                     assert.calledWith(requestMock, {
-                        json: true,
                         method: 'GET',
-                        auth: {
-                            bearer: systemToken
+                        context: {
+                            token: systemToken,
+                            caller: '_findWebhook'
                         },
                         url: `${API_URL_V2}/repositories/repoId/hooks?pagelen=30&page=1`
                     });
                     assert.calledWith(requestMock, {
-                        body: {
+                        json: {
                             description: 'Screwdriver-CD build trigger',
                             url: 'url',
                             active: true,
@@ -1729,10 +1730,10 @@ describe('index', function() {
                                 'pullrequest:updated'
                             ]
                         },
-                        json: true,
                         method: 'POST',
-                        auth: {
-                            bearer: oauthToken
+                        context: {
+                            token: oauthToken,
+                            caller: '_createWebhook'
                         },
                         url: `${API_URL_V2}/repositories/repoId/hooks`
                     });
@@ -1742,7 +1743,7 @@ describe('index', function() {
         it('updates a pre-existing webhook', () => {
             const uuid = 'uuidValue';
 
-            requestMock.onFirstCall().yieldsAsync(null, {
+            requestMock.onFirstCall().resolves({
                 body: {
                     pagelen: 30,
                     values: [
@@ -1774,15 +1775,15 @@ describe('index', function() {
                 })
                 .then(() => {
                     assert.calledWith(requestMock, {
-                        json: true,
                         method: 'GET',
-                        auth: {
-                            bearer: systemToken
+                        context: {
+                            token: systemToken,
+                            caller: '_findWebhook'
                         },
                         url: `${API_URL_V2}/repositories/repoId/hooks?pagelen=30&page=1`
                     });
                     assert.calledWith(requestMock, {
-                        body: {
+                        json: {
                             description: 'Screwdriver-CD build trigger',
                             url: 'url',
                             active: true,
@@ -1794,10 +1795,10 @@ describe('index', function() {
                                 'pullrequest:updated'
                             ]
                         },
-                        json: true,
                         method: 'PUT',
-                        auth: {
-                            bearer: oauthToken
+                        context: {
+                            token: oauthToken,
+                            caller: '_createWebhook'
                         },
                         url: `${API_URL_V2}/repositories/repoId/hooks/${uuid}`
                     });
@@ -1812,7 +1813,7 @@ describe('index', function() {
                 fakeValues.push({});
             }
 
-            requestMock.onFirstCall().yieldsAsync(null, {
+            requestMock.onFirstCall().resolves({
                 body: {
                     pagelen: 30,
                     values: fakeValues,
@@ -1821,7 +1822,7 @@ describe('index', function() {
                 },
                 statusCode: 200
             });
-            requestMock.onSecondCall().yieldsAsync(null, {
+            requestMock.onSecondCall().resolves({
                 body: {
                     pagelen: 30,
                     values: [
@@ -1853,15 +1854,15 @@ describe('index', function() {
                 })
                 .then(() => {
                     assert.calledWith(requestMock, {
-                        json: true,
                         method: 'GET',
-                        auth: {
-                            bearer: systemToken
+                        context: {
+                            token: systemToken,
+                            caller: '_findWebhook'
                         },
                         url: `${API_URL_V2}/repositories/repoId/hooks?pagelen=30&page=2`
                     });
                     assert.calledWith(requestMock, {
-                        body: {
+                        json: {
                             description: 'Screwdriver-CD build trigger',
                             url: 'url',
                             active: true,
@@ -1873,10 +1874,10 @@ describe('index', function() {
                                 'pullrequest:updated'
                             ]
                         },
-                        json: true,
                         method: 'PUT',
-                        auth: {
-                            bearer: oauthToken
+                        context: {
+                            token: oauthToken,
+                            caller: '_createWebhook'
                         },
                         url: `${API_URL_V2}/repositories/repoId/hooks/${uuid}`
                     });
@@ -1884,22 +1885,9 @@ describe('index', function() {
         });
 
         it('rejects when failing to get the current list of webhooks', () => {
-            const expectedMessage = [
-                'Your credentials lack one or more required privilege scopes.',
-                'Reason "webhook"'
-            ].join(' ');
-            const testErrorBody = {
-                type: 'error',
-                error: {
-                    message: 'Your credentials lack one or more required privilege scopes.',
-                    detail: 'webhook'
-                }
-            };
+            const testError = new Error('_findWebhookError');
 
-            requestMock.onFirstCall().yieldsAsync(null, {
-                body: testErrorBody,
-                statusCode: 403
-            });
+            requestMock.onFirstCall().rejects(testError);
 
             /* eslint-disable no-underscore-dangle */
             return scm
@@ -1917,60 +1905,21 @@ describe('index', function() {
                     ]
                 })
                 .then(assert.fail, err => {
-                    assert.strictEqual(err.message, expectedMessage);
-                    assert.strictEqual(err.status, 403);
-                });
-        });
-
-        it('rejects with a stringified error when bitbucket API fails to list webhooks', () => {
-            const statusCode = 500;
-            const expectedMessage = `SCM service unavailable (${statusCode}). Reason "undefined"`;
-
-            requestMock.onFirstCall().yieldsAsync(null, {
-                body: undefined,
-                statusCode
-            });
-
-            /* eslint-disable no-underscore-dangle */
-            return scm
-                ._addWebhook({
-                    /* eslint-enable no-underscore-dangle */
-                    scmUri,
-                    token,
-                    webhookUrl: 'url',
-                    actions: [
-                        'repo:push',
-                        'pullrequest:created',
-                        'pullrequest:fulfilled',
-                        'pullrequest:rejected',
-                        'pullrequest:updated'
-                    ]
-                })
-                .then(assert.fail, err => {
-                    assert.strictEqual(err.message, expectedMessage);
+                    assert.strictEqual(err, testError);
                 });
         });
 
         it('rejects when failing to create a webhook', () => {
-            const testErrorBody = {
-                type: 'error',
-                error: {
-                    message: 'Your credentials lack one or more required privilege scopes.',
-                    detail: 'webhook'
-                }
-            };
+            const testError = new Error('_createWebhookError');
 
-            requestMock.onFirstCall().yieldsAsync(null, {
+            requestMock.onFirstCall().resolves({
                 body: {
                     values: [],
                     size: 0
                 },
                 statusCode: 200
             });
-            requestMock.onSecondCall().yieldsAsync(null, {
-                body: testErrorBody,
-                statusCode: 403
-            });
+            requestMock.onSecondCall().rejects(testError);
 
             /* eslint-disable no-underscore-dangle */
             return scm
@@ -1988,27 +1937,14 @@ describe('index', function() {
                     ]
                 })
                 .then(assert.fail, err => {
-                    assert.strictEqual(
-                        err.message,
-                        ['Your credentials lack one or more required privilege scopes.', 'Reason "webhook"'].join(' ')
-                    );
+                    assert.strictEqual(err, testError);
                 });
         });
 
         it('rejects when failing to update a webhook', () => {
-            const expectedMessage = [
-                'Your credentials lack one or more required privilege scopes.',
-                'Reason "webhook"'
-            ].join(' ');
-            const testErrorBody = {
-                type: 'error',
-                error: {
-                    message: 'Your credentials lack one or more required privilege scopes.',
-                    detail: 'webhook'
-                }
-            };
+            const testError = new Error('_updateWebhookError');
 
-            requestMock.onFirstCall().yieldsAsync(null, {
+            requestMock.onFirstCall().resolves({
                 body: {
                     values: [
                         {
@@ -2020,10 +1956,7 @@ describe('index', function() {
                 },
                 statusCode: 200
             });
-            requestMock.onSecondCall().yieldsAsync(null, {
-                body: testErrorBody,
-                statusCode: 403
-            });
+            requestMock.onSecondCall().rejects(testError);
 
             /* eslint-disable no-underscore-dangle */
             return scm
@@ -2041,48 +1974,7 @@ describe('index', function() {
                     ]
                 })
                 .then(assert.fail, err => {
-                    assert.strictEqual(err.message, expectedMessage);
-                });
-        });
-
-        it('rejects with a stringified error when bitbucket API fails to update webhook', () => {
-            const statusCode = 500;
-            const expectedMessage = `SCM service unavailable (${statusCode}). Reason "{}"`;
-
-            requestMock.onFirstCall().yieldsAsync(null, {
-                body: {
-                    values: [
-                        {
-                            url: 'url',
-                            uuid: 'uuid'
-                        }
-                    ],
-                    size: 1
-                },
-                statusCode: 200
-            });
-            requestMock.onSecondCall().yieldsAsync(null, {
-                body: {},
-                statusCode
-            });
-
-            /* eslint-disable no-underscore-dangle */
-            return scm
-                ._addWebhook({
-                    /* eslint-enable no-underscore-dangle */
-                    scmUri,
-                    token,
-                    webhookUrl: 'url',
-                    actions: [
-                        'repo:push',
-                        'pullrequest:created',
-                        'pullrequest:fulfilled',
-                        'pullrequest:rejected',
-                        'pullrequest:updated'
-                    ]
-                })
-                .then(assert.fail, err => {
-                    assert.strictEqual(err.message, expectedMessage);
+                    assert.strictEqual(err, testError);
                 });
         });
     });
@@ -2093,14 +1985,14 @@ describe('index', function() {
         const expectedOptions = {
             url: `${API_URL_V2}/repositories/repoId/pullrequests`,
             method: 'GET',
-            json: true,
-            auth: {
-                bearer: systemToken
+            context: {
+                token: systemToken,
+                caller: '_getOpenedPRs'
             }
         };
 
         it('returns response of expected format from Bitbucket', () => {
-            requestMock.yieldsAsync(null, {
+            requestMock.resolves({
                 body: {
                     values: [
                         {
@@ -2141,14 +2033,14 @@ describe('index', function() {
         const expectedOptions = {
             url: `${API_URL_V2}/repositories/repoId/pullrequests/${prNum}`,
             method: 'GET',
-            json: true,
-            auth: {
-                bearer: systemToken
+            context: {
+                token: systemToken,
+                caller: '_getPrInfo'
             }
         };
 
         it('returns response of expected format from Bitbucket', () => {
-            requestMock.yieldsAsync(null, {
+            requestMock.resolves({
                 body: {
                     links: {
                         html: {
@@ -2272,14 +2164,14 @@ describe('index', function() {
         });
     });
 
-    describe('getBranchList', () => {
+    describe('_getBranchList', () => {
         const branchListConfig = {
             scmUri: 'hostName:repoId:branchName',
             token: 'oauthToken'
         };
 
         beforeEach(() => {
-            requestMock.yieldsAsync(null, {
+            requestMock.resolves({
                 statusCode: 200,
                 body: {
                     values: []
@@ -2288,7 +2180,7 @@ describe('index', function() {
         });
 
         it('gets branches', done => {
-            requestMock.onFirstCall().yieldsAsync(null, {
+            requestMock.onFirstCall().resolves({
                 body: {
                     values: [{ name: 'master' }],
                     size: 1
@@ -2298,10 +2190,10 @@ describe('index', function() {
             scm.getBranchList(branchListConfig)
                 .then(b => {
                     assert.calledWith(requestMock, {
-                        json: true,
                         method: 'GET',
-                        auth: {
-                            bearer: systemToken
+                        context: {
+                            token: systemToken,
+                            caller: '_findBranches'
                         },
                         url: `${API_URL_V2}/repositories/repoId/refs/branches?pagelen=100&page=1`
                     });
@@ -2334,10 +2226,10 @@ describe('index', function() {
                 }
             };
 
-            requestMock.onCall(0).yieldsAsync(null, fakeResponse, fakeResponse.body);
-            requestMock.onCall(1).yieldsAsync(null, fakeResponse, fakeResponse.body);
-            requestMock.onCall(2).yieldsAsync(null, fakeResponse, fakeResponse.body);
-            requestMock.onCall(3).yieldsAsync(null, fakeResponseEmpty, fakeResponseEmpty.body);
+            requestMock.onCall(0).resolves(fakeResponse);
+            requestMock.onCall(1).resolves(fakeResponse);
+            requestMock.onCall(2).resolves(fakeResponse);
+            requestMock.onCall(3).resolves(fakeResponseEmpty);
             scm.getBranchList(branchListConfig)
                 .then(branches => {
                     assert.equal(branches.length, 300);
@@ -2349,7 +2241,7 @@ describe('index', function() {
         it('throws an error when failing to getBranches', () => {
             const testError = new Error('getBranchesError');
 
-            requestMock.yieldsAsync(testError);
+            requestMock.rejects(testError);
 
             return scm.getBranchList(branchListConfig).then(assert.fail, err => {
                 assert.equal(err, testError);
@@ -2364,7 +2256,7 @@ describe('index', function() {
                 body: JSON.stringify(testPayloadAccessToken)
             };
 
-            requestMock.yieldsAsync(null, response, response.body);
+            requestMock.resolves(response);
         });
 
         it('request new token', done => {
@@ -2379,9 +2271,11 @@ describe('index', function() {
                     assert.calledWith(requestMock, {
                         url: 'https://bitbucket.org/site/oauth2/access_token',
                         method: 'POST',
-                        auth: {
-                            user: 'myclientid',
-                            pass: 'myclientsecret'
+                        username: 'myclientid',
+                        password: 'myclientsecret',
+                        context: {
+                            caller: '_refreshToken',
+                            token: undefined
                         },
                         form: {
                             grant_type: 'client_credentials'
@@ -2404,9 +2298,11 @@ describe('index', function() {
                     assert.calledWith(requestMock, {
                         url: 'https://bitbucket.org/site/oauth2/access_token',
                         method: 'POST',
-                        auth: {
-                            user: 'myclientid',
-                            pass: 'myclientsecret'
+                        username: 'myclientid',
+                        password: 'myclientsecret',
+                        context: {
+                            caller: '_refreshToken',
+                            token: undefined
                         },
                         form: {
                             grant_type: 'refresh_token',
