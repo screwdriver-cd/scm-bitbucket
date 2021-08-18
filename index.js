@@ -74,7 +74,6 @@ class BitbucketScm extends Scm {
      * Bitbucket command to run
      * @method _gitlabCommand
      * @param  {Object}      options              An object that tells what command & params to run
-     * @param  {String}      options.caller       Name of method that is making the request
      * @param  {Object}      [options.json]       Body for request to make
      * @param  {String}      options.method       Bitbucket method. For example: get
      * @param  {String}      options.route        Route for gitlab.request()
@@ -86,10 +85,8 @@ class BitbucketScm extends Scm {
 
         // Everything else goes into context
         config.context = {
-            caller: options.caller,
             token: options.token
         };
-        delete config.caller;
         delete config.token;
 
         request(config)
@@ -209,7 +206,6 @@ class BitbucketScm extends Scm {
         const response = await this.breaker.runCommand({
             method: 'GET',
             token,
-            caller: '_findWebhook',
             url: `${REPO_URL}/${repoId}/hooks?pagelen=30&page=${page}`
         });
 
@@ -262,7 +258,6 @@ class BitbucketScm extends Scm {
             },
             method: 'POST',
             token,
-            caller: '_createWebhook',
             url: `${REPO_URL}/${repoId}/hooks`
         };
 
@@ -329,8 +324,7 @@ class BitbucketScm extends Scm {
         const options = {
             url: branchUrl,
             method: 'GET',
-            token,
-            caller: '_parseUrl'
+            token
         };
 
         if (hostname !== this.hostname) {
@@ -426,8 +420,7 @@ class BitbucketScm extends Scm {
         const options = {
             url: `${USER_URL}/${encodeURIComponent(username)}`,
             method: 'GET',
-            token,
-            caller: '_decorateAuthor'
+            token
         };
 
         const response = await this.breaker.runCommand(options);
@@ -473,8 +466,7 @@ class BitbucketScm extends Scm {
         const options = {
             url: `${REPO_URL}/${repoId}`,
             method: 'GET',
-            token,
-            caller: '_decorateUrl'
+            token
         };
 
         const response = await this.breaker.runCommand(options);
@@ -507,8 +499,7 @@ class BitbucketScm extends Scm {
         const options = {
             url: `${REPO_URL}/${scm.repoId}/commit/${sha}`,
             method: 'GET',
-            token,
-            caller: '_decorateCommit'
+            token
         };
 
         const response = await this.breaker.runCommand(options);
@@ -549,8 +540,7 @@ class BitbucketScm extends Scm {
         const options = {
             url: branchUrl,
             method: 'GET',
-            token,
-            caller: '_getCommitSha'
+            token
         };
 
         const response = await this.breaker.runCommand(options);
@@ -596,8 +586,7 @@ class BitbucketScm extends Scm {
         const options = {
             url: fileUrl,
             method: 'GET',
-            token,
-            caller: '_getFile'
+            token
         };
 
         const response = await this.breaker.runCommand(options);
@@ -626,16 +615,14 @@ class BitbucketScm extends Scm {
         await this.breaker.runCommand({
             url: `${REPO_URL}/${owner}/${uuid}`,
             method: 'GET',
-            token,
-            caller: '_getPermissions'
+            token
         });
 
         const getPerm = async desiredAccess => {
             const options = {
                 url: `${REPO_URL}/${owner}?q=uuid%3D%22${uuid}%22`,
                 method: 'GET',
-                token,
-                caller: '_getPermissions'
+                token
             };
 
             if (desiredAccess === 'admin') {
@@ -694,8 +681,7 @@ class BitbucketScm extends Scm {
                 key: sha,
                 description: context
             },
-            token: decodeURIComponent(token),
-            caller: '_updateCommitStatus'
+            token: decodeURIComponent(token)
         };
 
         return this.breaker.runCommand(options).then(response => {
@@ -874,8 +860,7 @@ class BitbucketScm extends Scm {
         const response = await this.breaker.runCommand({
             url: `${REPO_URL}/${repoId}/pullrequests`,
             method: 'GET',
-            token,
-            caller: '_getOpenedPRs'
+            token
         });
 
         const prList = response.body.values;
@@ -902,8 +887,7 @@ class BitbucketScm extends Scm {
         const response = await this.breaker.runCommand({
             url: `${REPO_URL}/${repoId}/pullrequests/${prNum}`,
             method: 'GET',
-            token,
-            caller: '_getPrInfo'
+            token
         });
 
         const pr = response.body;
@@ -976,7 +960,6 @@ class BitbucketScm extends Scm {
         const response = await this.breaker.runCommand({
             method: 'GET',
             token,
-            caller: '_findBranches',
             url: `${REPO_URL}/${config.repoId}/refs/branches?pagelen=${BRANCH_PAGE_SIZE}&page=${config.page}`
         });
 
@@ -1038,8 +1021,7 @@ class BitbucketScm extends Scm {
             username: this.config.oauthClientId,
             password: this.config.oauthClientSecret,
             url: `https://${this.hostname}/site/oauth2/access_token`,
-            form: {},
-            caller: '_refreshToken'
+            form: {}
         };
 
         // we will have to request for a new token if one is not yet generated

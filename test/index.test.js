@@ -126,8 +126,7 @@ describe('index', function() {
                 url: `${apiUrl}/mynewbranch`,
                 method: 'GET',
                 context: {
-                    token: systemToken,
-                    caller: '_parseUrl'
+                    token: systemToken
                 }
             };
             requestMock.resolves(fakeResponse);
@@ -140,8 +139,7 @@ describe('index', function() {
                 url: `${apiUrl}/master`,
                 method: 'GET',
                 context: {
-                    token: systemToken,
-                    caller: '_parseUrl'
+                    token: systemToken
                 }
             };
 
@@ -163,8 +161,7 @@ describe('index', function() {
                 url: `${apiUrl}/master`,
                 method: 'GET',
                 context: {
-                    token: systemToken,
-                    caller: '_parseUrl'
+                    token: systemToken
                 }
             };
 
@@ -479,8 +476,7 @@ describe('index', function() {
             url: apiUrl,
             method: 'GET',
             context: {
-                token: systemToken,
-                caller: '_decorateAuthor'
+                token: systemToken
             }
         };
         let fakeResponse;
@@ -545,8 +541,7 @@ describe('index', function() {
                 url: `${API_URL_V2}/users/batman`,
                 method: 'GET',
                 context: {
-                    token: systemToken,
-                    caller: '_decorateAuthor'
+                    token: systemToken
                 }
             };
 
@@ -614,8 +609,7 @@ describe('index', function() {
             url: apiUrl,
             method: 'GET',
             context: {
-                token: systemToken,
-                caller: '_decorateUrl'
+                token: systemToken
             }
         };
         let fakeResponse;
@@ -637,8 +631,7 @@ describe('index', function() {
                 url: apiUrl,
                 method: 'GET',
                 context: {
-                    token: systemToken,
-                    caller: '_decorateUrl'
+                    token: systemToken
                 }
             };
             requestMock.withArgs(repoOptions).resolves(fakeResponse);
@@ -719,16 +712,14 @@ describe('index', function() {
             url: repoUrl,
             method: 'GET',
             context: {
-                token: systemToken,
-                caller: '_decorateCommit'
+                token: systemToken
             }
         };
         const authorOptions = {
             url: authorUrl,
             method: 'GET',
             context: {
-                token: systemToken,
-                caller: '_decorateAuthor'
+                token: systemToken
             }
         };
         let fakeResponse;
@@ -850,8 +841,7 @@ describe('index', function() {
             url: apiUrl,
             method: 'GET',
             context: {
-                token: systemToken,
-                caller: '_getCommitSha'
+                token: systemToken
             }
         };
         let fakeResponse;
@@ -885,8 +875,7 @@ describe('index', function() {
                 url: `${API_URL_V2}/repositories/repoId/pullrequests/${prNum}`,
                 method: 'GET',
                 context: {
-                    token: systemToken,
-                    caller: '_getPrInfo'
+                    token: systemToken
                 }
             };
 
@@ -983,8 +972,7 @@ describe('index', function() {
                 url: apiUrl,
                 method: 'GET',
                 context: {
-                    token: systemToken,
-                    caller: '_getFile'
+                    token: systemToken
                 }
             };
             fakeResponse = {
@@ -1070,40 +1058,35 @@ describe('index', function() {
                 url: `${API_URL_V2}/repositories/repoIdPrefix/repoIdSuffix`,
                 method: 'GET',
                 context: {
-                    token: systemToken,
-                    caller: '_getPermissions'
+                    token: systemToken
                 }
             },
             {
                 url: `${API_URL_V2}/repositories/repoIdPrefix/repoIdSuffix1`,
                 method: 'GET',
                 context: {
-                    token: systemToken,
-                    caller: '_getPermissions'
+                    token: systemToken
                 }
             },
             {
                 url: `${API_URL_V2}/repositories/repoIdPrefix/repoIdSuffix2`,
                 method: 'GET',
                 context: {
-                    token: systemToken,
-                    caller: '_getPermissions'
+                    token: systemToken
                 }
             },
             {
                 url: `${API_URL_V2}/repositories/repoIdPrefix/repoIdSuffix3`,
                 method: 'GET',
                 context: {
-                    token: systemToken,
-                    caller: '_getPermissions'
+                    token: systemToken
                 }
             },
             {
                 url: `${API_URL_V2}/repositories/repoIdPrefix/fake`,
                 method: 'GET',
                 context: {
-                    token: systemToken,
-                    caller: '_getPermissions'
+                    token: systemToken
                 }
             }
         ];
@@ -1112,8 +1095,7 @@ describe('index', function() {
             url: `${API_URL_V2}/repositories/repoIdPrefix?q=uuid%3D%22repoIdSuffix%22`,
             method: 'GET',
             context: {
-                token: systemToken,
-                caller: '_getPermissions'
+                token: systemToken
             }
         };
         const pulls = [
@@ -1121,32 +1103,28 @@ describe('index', function() {
                 url: `${API_URL_V2}/repositories/repoIdPrefix?q=uuid%3D%22repoIdSuffix%22`,
                 method: 'GET',
                 context: {
-                    token: systemToken,
-                    caller: '_getPermissions'
+                    token: systemToken
                 }
             },
             {
                 url: `${API_URL_V2}/repositories/repoIdPrefix?q=uuid%3D%22repoIdSuffix1%22`,
                 method: 'GET',
                 context: {
-                    token: systemToken,
-                    caller: '_getPermissions'
+                    token: systemToken
                 }
             },
             {
                 url: `${API_URL_V2}/repositories/repoIdPrefix?q=uuid%3D%22repoIdSuffix2%22`,
                 method: 'GET',
                 context: {
-                    token: systemToken,
-                    caller: '_getPermissions'
+                    token: systemToken
                 }
             },
             {
                 url: `${API_URL_V2}/repositories/repoIdPrefix?q=uuid%3D%22repoIdSuffix3%22`,
                 method: 'GET',
                 context: {
-                    token: systemToken,
-                    caller: '_getPermissions'
+                    token: systemToken
                 }
             }
         ];
@@ -1155,32 +1133,28 @@ describe('index', function() {
                 url: `${API_URL_V2}/repositories/repoIdPrefix?q=uuid%3D%22repoIdSuffix%22&role=contributor`,
                 method: 'GET',
                 context: {
-                    token: systemToken,
-                    caller: '_getPermissions'
+                    token: systemToken
                 }
             },
             {
                 url: `${API_URL_V2}/repositories/repoIdPrefix?q=uuid%3D%22repoIdSuffix1%22&role=contributor`,
                 method: 'GET',
                 context: {
-                    token: systemToken,
-                    caller: '_getPermissions'
+                    token: systemToken
                 }
             },
             {
                 url: `${API_URL_V2}/repositories/repoIdPrefix?q=uuid%3D%22repoIdSuffix2%22&role=contributor`,
                 method: 'GET',
                 context: {
-                    token: systemToken,
-                    caller: '_getPermissions'
+                    token: systemToken
                 }
             },
             {
                 url: `${API_URL_V2}/repositories/repoIdPrefix?q=uuid%3D%22repoIdSuffix3%22&role=contributor`,
                 method: 'GET',
                 context: {
-                    token: systemToken,
-                    caller: '_getPermissions'
+                    token: systemToken
                 }
             }
         ];
@@ -1189,32 +1163,28 @@ describe('index', function() {
                 url: `${API_URL_V2}/repositories/repoIdPrefix?q=uuid%3D%22repoIdSuffix%22&role=admin`,
                 method: 'GET',
                 context: {
-                    token: systemToken,
-                    caller: '_getPermissions'
+                    token: systemToken
                 }
             },
             {
                 url: `${API_URL_V2}/repositories/repoIdPrefix?q=uuid%3D%22repoIdSuffix1%22&role=admin`,
                 method: 'GET',
                 context: {
-                    token: systemToken,
-                    caller: '_getPermissions'
+                    token: systemToken
                 }
             },
             {
                 url: `${API_URL_V2}/repositories/repoIdPrefix?q=uuid%3D%22repoIdSuffix2%22&role=admin`,
                 method: 'GET',
                 context: {
-                    token: systemToken,
-                    caller: '_getPermissions'
+                    token: systemToken
                 }
             },
             {
                 url: `${API_URL_V2}/repositories/repoIdPrefix?q=uuid%3D%22repoIdSuffix3%22&role=admin`,
                 method: 'GET',
                 context: {
-                    token: systemToken,
-                    caller: '_getPermissions'
+                    token: systemToken
                 }
             }
         ];
@@ -1471,8 +1441,7 @@ describe('index', function() {
                     description: 'Screwdriver/123/main'
                 },
                 context: {
-                    token: 'bearerToken', // Decoded access token,
-                    caller: '_updateCommitStatus'
+                    token: 'bearerToken'
                 }
             };
             requestMock.resolves(fakeResponse);
@@ -1712,8 +1681,7 @@ describe('index', function() {
                     assert.calledWith(requestMock, {
                         method: 'GET',
                         context: {
-                            token: systemToken,
-                            caller: '_findWebhook'
+                            token: systemToken
                         },
                         url: `${API_URL_V2}/repositories/repoId/hooks?pagelen=30&page=1`
                     });
@@ -1732,8 +1700,7 @@ describe('index', function() {
                         },
                         method: 'POST',
                         context: {
-                            token: oauthToken,
-                            caller: '_createWebhook'
+                            token: oauthToken
                         },
                         url: `${API_URL_V2}/repositories/repoId/hooks`
                     });
@@ -1777,8 +1744,7 @@ describe('index', function() {
                     assert.calledWith(requestMock, {
                         method: 'GET',
                         context: {
-                            token: systemToken,
-                            caller: '_findWebhook'
+                            token: systemToken
                         },
                         url: `${API_URL_V2}/repositories/repoId/hooks?pagelen=30&page=1`
                     });
@@ -1797,8 +1763,7 @@ describe('index', function() {
                         },
                         method: 'PUT',
                         context: {
-                            token: oauthToken,
-                            caller: '_createWebhook'
+                            token: oauthToken
                         },
                         url: `${API_URL_V2}/repositories/repoId/hooks/${uuid}`
                     });
@@ -1856,8 +1821,7 @@ describe('index', function() {
                     assert.calledWith(requestMock, {
                         method: 'GET',
                         context: {
-                            token: systemToken,
-                            caller: '_findWebhook'
+                            token: systemToken
                         },
                         url: `${API_URL_V2}/repositories/repoId/hooks?pagelen=30&page=2`
                     });
@@ -1876,8 +1840,7 @@ describe('index', function() {
                         },
                         method: 'PUT',
                         context: {
-                            token: oauthToken,
-                            caller: '_createWebhook'
+                            token: oauthToken
                         },
                         url: `${API_URL_V2}/repositories/repoId/hooks/${uuid}`
                     });
@@ -1986,8 +1949,7 @@ describe('index', function() {
             url: `${API_URL_V2}/repositories/repoId/pullrequests`,
             method: 'GET',
             context: {
-                token: systemToken,
-                caller: '_getOpenedPRs'
+                token: systemToken
             }
         };
 
@@ -2034,8 +1996,7 @@ describe('index', function() {
             url: `${API_URL_V2}/repositories/repoId/pullrequests/${prNum}`,
             method: 'GET',
             context: {
-                token: systemToken,
-                caller: '_getPrInfo'
+                token: systemToken
             }
         };
 
@@ -2192,8 +2153,7 @@ describe('index', function() {
                     assert.calledWith(requestMock, {
                         method: 'GET',
                         context: {
-                            token: systemToken,
-                            caller: '_findBranches'
+                            token: systemToken
                         },
                         url: `${API_URL_V2}/repositories/repoId/refs/branches?pagelen=100&page=1`
                     });
@@ -2274,7 +2234,6 @@ describe('index', function() {
                         username: 'myclientid',
                         password: 'myclientsecret',
                         context: {
-                            caller: '_refreshToken',
                             token: undefined
                         },
                         form: {
@@ -2301,7 +2260,6 @@ describe('index', function() {
                         username: 'myclientid',
                         password: 'myclientsecret',
                         context: {
-                            caller: '_refreshToken',
                             token: undefined
                         },
                         form: {
