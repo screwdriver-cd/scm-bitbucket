@@ -2213,7 +2213,7 @@ describe('index', function() {
         beforeEach(() => {
             const response = {
                 statusCode: 200,
-                body: JSON.stringify(testPayloadAccessToken)
+                body: testPayloadAccessToken
             };
 
             requestMock.resolves(response);
