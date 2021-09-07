@@ -1037,9 +1037,7 @@ class BitbucketScm extends Scm {
         }
 
         const response = await this.breaker.runCommand(params);
-
-        // we will have to parse the body since we are sending a normal FORM POST request
-        const body = JSON.parse(response.body);
+        const { body } = response;
 
         if (response.statusCode !== 200) {
             throw new Error(`STATUS CODE ${response.statusCode}: ${JSON.stringify(body)}`);
