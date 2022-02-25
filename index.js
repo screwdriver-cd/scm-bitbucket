@@ -826,11 +826,6 @@ class BitbucketScm extends Scm {
         command.push(`${gitWrapper} "git config user.name ${this.config.username}"`);
         command.push(`${gitWrapper} "git config user.email ${this.config.email}"`);
 
-        // cd into rootDir after cloning
-        if (rootDir) {
-            command.push(`cd ${rootDir}`);
-        }
-
         if (prReference) {
             const prRef = prReference.replace('merge', 'head:pr');
 
@@ -840,6 +835,11 @@ class BitbucketScm extends Scm {
             // Init & Update submodule
             command.push(`${gitWrapper} "git submodule init"`);
             command.push(`${gitWrapper} "git submodule update --recursive"`);
+        }
+
+        // cd into rootDir after merging
+        if (rootDir) {
+            command.push(`cd ${rootDir}`);
         }
 
         return Promise.resolve({ name: 'sd-checkout-code', command: command.join(' && ') });
