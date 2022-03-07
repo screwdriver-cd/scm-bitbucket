@@ -29,6 +29,19 @@ const STATE_MAP = {
 const WEBHOOK_PAGE_SIZE = 30;
 
 /**
+ * Throw error with error code
+ * @param {String} errorReason Error message
+ * @param {Number} errorCode   Error code
+ * @throws {Error}             Throws error
+ */
+function throwError(errorReason, errorCode = 500) {
+    const err = new Error(errorReason);
+
+    err.statusCode = errorCode;
+    throw err;
+}
+
+/**
  * Get repo information
  * @method  getRepoInfo
  * @param   {String}    checkoutUrl     The url to check out repo
@@ -328,16 +341,13 @@ class BitbucketScm extends Scm {
         };
 
         if (hostname !== this.hostname) {
-            throw new Error('This checkoutUrl is not supported for your current login host.');
+            throwError('This checkoutUrl is not supported for your current login host.', 400);
         }
 
         const response = await this.breaker.runCommand(options);
 
-        if (response.statusCode === 404) {
-            throw new Error(`Cannot find repository ${checkoutUrl}`);
-        }
         if (response.statusCode !== 200) {
-            throw new Error(`STATUS CODE ${response.statusCode}: ${JSON.stringify(response.body)}`);
+            throwError(`STATUS CODE ${response.statusCode}: ${JSON.stringify(response.body)}`, response.statusCode);
         }
 
         const scmUri = `${hostname}:${username}/${response.body.target.repository.uuid}:${branch}`;
