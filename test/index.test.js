@@ -267,17 +267,10 @@ describe('index', function() {
         });
 
         it('rejects if status code is 404', () => {
-            fakeResponse = {
-                statusCode: 404,
-                body: {
-                    error: {
-                        message: 'Resource not found',
-                        detail: 'There is no API hosted at this URL'
-                    }
-                }
-            };
+            const err = new Error('Cannot find repository');
 
-            requestMock.resolves(fakeResponse);
+            err.statusCode = 404;
+            requestMock.rejects(err);
 
             return scm
                 .parseUrl({
