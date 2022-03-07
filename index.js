@@ -341,7 +341,7 @@ class BitbucketScm extends Scm {
         };
 
         if (hostname !== this.hostname) {
-            throwError('This checkoutUrl is not supported for your current login host.', '400');
+            throwError('This checkoutUrl is not supported for your current login host.', 400);
         }
 
         const response = await this.breaker.runCommand(options);
