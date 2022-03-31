@@ -35,8 +35,8 @@
     "debug": false
   },
   "devDependencies": {
-    "chai": "^4.3.4",
-    "eslint": "^7.5.0",
+    "chai": "^4.3.6",
+    "eslint": "^7.32.0",
     "eslint-config-screwdriver": "^5.0.1",
     "mocha": "^8.4.0",
     "mocha-multi-reporters": "^1.5.1",
@@ -46,11 +46,11 @@
     "sinon": "^9.0.0"
   },
   "dependencies": {
-    "@hapi/hoek": "^9.2.0",
-    "circuit-fuses": "^4.0.6",
-    "joi": "^17.2.1",
-    "screwdriver-data-schema": "^21.6.1",
-    "screwdriver-request": "^1.0.0",
-    "screwdriver-scm-base": "^7.2.1"
+    "@hapi/hoek": "^9.2.1",
+    "circuit-fuses": "^4.1.2",
+    "joi": "^17.6.0",
+    "screwdriver-data-schema": "^21.22.2",
+    "screwdriver-request": "^1.0.3",
+    "screwdriver-scm-base": "^7.4.0"
   }
 }

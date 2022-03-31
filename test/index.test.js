@@ -1004,6 +1004,22 @@ describe('index', function() {
             });
         });
 
+        it('resolves to correct commit sha with fullPath', () => {
+            scmUri = 'hostName:repoId:branchName:src/app/component';
+            params = {
+                scmUri,
+                token,
+                path: 'git@bitbucket.org:screwdriver-cd/reponame.git#main:path/to/file.txt'
+            };
+            expectedOptions.url =
+                'https://api.bitbucket.org/2.0/repositories/screwdriver-cd/reponame/src/main/path/to/file.txt';
+
+            return scm.getFile(params).then(content => {
+                assert.calledWith(requestMock, expectedOptions);
+                assert.deepEqual(content, 'dataValue');
+            });
+        });
+
         it('rejects if status code is not 200', () => {
             fakeResponse = {
                 statusCode: 404,
