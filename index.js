@@ -10,6 +10,7 @@ const Path = require('path');
 const Url = require('url');
 const request = require('screwdriver-request');
 const schema = require('screwdriver-data-schema');
+const CHECKOUT_URL_REGEX = schema.config.regex.CHECKOUT_URL;
 const API_URL_V2 = 'https://api.bitbucket.org/2.0';
 const REPO_URL = `${API_URL_V2}/repositories`;
 const USER_URL = `${API_URL_V2}/users`;
@@ -49,8 +50,7 @@ function throwError(errorReason, errorCode = 500) {
  * @return  {Object}                    An object with hostname, repo, branch, and username
  */
 function getRepoInfo(checkoutUrl, rootDir) {
-    const regex = schema.config.regex.CHECKOUT_URL;
-    const matched = regex.exec(checkoutUrl);
+    const matched = CHECKOUT_URL_REGEX.exec(checkoutUrl);
 
     // Check if regex did not pass
     if (!matched) {
@@ -582,17 +582,35 @@ class BitbucketScm extends Scm {
      * @async getFile
      * @param  {Object}   config              Configuration
      * @param  {String}   config.scmUri       The scmUri
-     * @param  {String}   config.path         The file in the repo to fetch
+     * @param  {String}   config.path         The file in the repo to fetch or full checkout URL
      * @param  {String}   config.token        The token used to authenticate to the SCM
      * @param  {String}   [config.ref]        The reference to the SCM, either branch or sha
      * @return {Promise}                      Resolves to the content of the file
      */
     async _getFile({ scmUri, ref, path }) {
-        const { branch: branchFromScmUri, repoId, rootDir } = getScmUriParts(scmUri);
-        const branch = ref || branchFromScmUri;
-        const fullPath = rootDir ? Path.join(rootDir, path) : path;
-        const fileUrl = `${REPO_URL}/${repoId}/src/${branch}/${fullPath}`;
+        let fullPath = path;
+        let username;
+        let repo;
+        let branch;
+        let rootDir;
+        let repoId;
         const token = await this._getToken();
+
+        // If full path to a file is provided, e.g. git@github.com:screwdriver-cd/scm-github.git:path/to/a/file.yaml
+        if (CHECKOUT_URL_REGEX.test(path)) {
+            ({ username, repo, branch, rootDir } = getRepoInfo(fullPath));
+            fullPath = rootDir;
+            repoId = `${username}/${repo}`;
+        } else {
+            const scmUriParts = getScmUriParts(scmUri);
+
+            ({ repoId, rootDir } = scmUriParts);
+            branch = ref || scmUriParts.branch;
+
+            fullPath = rootDir ? Path.join(rootDir, path) : path;
+        }
+
+        const fileUrl = `${REPO_URL}/${repoId}/src/${branch}/${fullPath}`;
         const options = {
             url: fileUrl,
             method: 'GET',
