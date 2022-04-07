@@ -522,7 +522,7 @@ describe('index', function() {
                 }
             };
 
-            requestMock.resolves(fakeResponse);
+            requestMock.rejects(fakeResponse);
 
             const expected = {
                 url: '',
@@ -546,32 +546,6 @@ describe('index', function() {
                 .then(decorated => {
                     assert.calledWith(requestMock, expectedFabricatedOptions);
                     assert.deepEqual(decorated, expected);
-                });
-        });
-        it('rejects if status code is not 200', () => {
-            fakeResponse = {
-                statusCode: 404,
-                body: {
-                    error: {
-                        message: 'Resource not found',
-                        detail: 'There is no API hosted at this URL'
-                    }
-                }
-            };
-
-            requestMock.resolves(fakeResponse);
-
-            return scm
-                .decorateAuthor({
-                    username: '{4f1a9b7f-586e-4e80-b9eb-a7589b4a165f}',
-                    token
-                })
-                .then(() => {
-                    assert.fail('Should not get here');
-                })
-                .catch(error => {
-                    assert.calledWith(requestMock, expectedOptions);
-                    assert.match(error.message, 'STATUS CODE 404');
                 });
         });
 
@@ -966,7 +940,8 @@ describe('index', function() {
                 method: 'GET',
                 context: {
                     token: systemToken
-                }
+                },
+                responseType: 'buffer'
             };
             fakeResponse = {
                 statusCode: 200,
@@ -1031,17 +1006,12 @@ describe('index', function() {
                 }
             };
 
-            requestMock.resolves(fakeResponse);
+            requestMock.rejects(fakeResponse);
 
-            return scm
-                .getFile(params)
-                .then(() => {
-                    assert.fail('Should not get here');
-                })
-                .catch(error => {
-                    assert.calledWith(requestMock, expectedOptions);
-                    assert.match(error.message, 'STATUS CODE 404');
-                });
+            return scm.getFile(params).then(content => {
+                assert.calledWith(requestMock, expectedOptions);
+                assert.deepEqual(content, '');
+            });
         });
 
         it('rejects if fails', () => {

@@ -6,6 +6,7 @@ const Breaker = require('circuit-fuses').breaker;
 const Scm = require('screwdriver-scm-base');
 const hoek = require('@hapi/hoek');
 const joi = require('joi');
+const logger = require('screwdriver-logger');
 const Path = require('path');
 const Url = require('url');
 const request = require('screwdriver-request');
@@ -426,38 +427,39 @@ class BitbucketScm extends Scm {
      * @return {Promise}                       Resolves to a decorated author with url, name, username, avatar
      */
     async _decorateAuthor({ username }) {
-        const token = await this._getToken();
-        const options = {
-            url: `${USER_URL}/${encodeURIComponent(username)}`,
-            method: 'GET',
-            token
-        };
-
-        const response = await this.breaker.runCommand(options);
-        const { body } = response;
-
-        if (response.statusCode === 404 && !username.match(/^\{.*\}/)) {
-            // Bitbucket API has changed, cannot use strict username request anymore, for now we will
-            // have to return a simple generated decoration result to allow all builds to function.
-            // We will only allow this if the username is not a {uuid} pattern. Since if this is a {uuid}
-            // pattern, this likely is a valid 404.
-            return {
-                url: '',
-                name: username,
-                username,
-                avatar: ''
+        try {
+            const token = await this._getToken();
+            const options = {
+                url: `${USER_URL}/${encodeURIComponent(username)}`,
+                method: 'GET',
+                token
             };
-        }
-        if (response.statusCode !== 200) {
-            throw new Error(`STATUS CODE ${response.statusCode}: ${JSON.stringify(body)}`);
-        }
 
-        return {
-            url: body.links.html.href,
-            name: body.display_name,
-            username: body.uuid,
-            avatar: body.links.avatar.href
-        };
+            const response = await this.breaker.runCommand(options);
+            const { body } = response;
+
+            return {
+                url: body.links.html.href,
+                name: body.display_name,
+                username: body.uuid,
+                avatar: body.links.avatar.href
+            };
+        } catch (err) {
+            if (err.statusCode === 404) {
+                // Bitbucket API has changed, cannot use strict username request anymore, for now we will
+                // have to return a simple generated decoration result to allow all builds to function.
+                // We will only allow this if the username is not a {uuid} pattern. Since if this is a {uuid}
+                // pattern, this likely is a valid 404.
+                return {
+                    url: '',
+                    name: username,
+                    username,
+                    avatar: ''
+                };
+            }
+            logger.error('Failed to decorateAuthor: ', err);
+            throw err;
+        }
     }
 
     /**
@@ -614,16 +616,24 @@ class BitbucketScm extends Scm {
         const options = {
             url: fileUrl,
             method: 'GET',
-            token
+            token,
+            responseType: 'buffer'
         };
 
-        const response = await this.breaker.runCommand(options);
+        try {
+            const response = await this.breaker.runCommand(options);
 
-        if (response.statusCode !== 200) {
-            throw new Error(`STATUS CODE ${response.statusCode}: ${JSON.stringify(response.body)}`);
+            return Buffer.from(response.body, 'utf8').toString();
+        } catch (err) {
+            logger.error('Failed to getFile: ', err);
+
+            if (err.statusCode === 404) {
+                // Returns an empty file if there is no screwdriver.yaml
+                return '';
+            }
+
+            throw err;
         }
-
-        return response.body;
     }
 
     /**
