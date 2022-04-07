@@ -29,6 +29,7 @@ const STATE_MAP = {
     ABORTED: 'STOPPED'
 };
 const WEBHOOK_PAGE_SIZE = 30;
+const DEFAULT_BRANCH = 'master';
 
 /**
  * Throw error with error code
@@ -216,26 +217,31 @@ class BitbucketScm extends Scm {
      * @return {Promise}                   Resolves to a webhook information payload
      */
     async _findWebhook({ page, repoId, token: configToken, url }) {
-        const token = await this._getToken();
-        const response = await this.breaker.runCommand({
-            method: 'GET',
-            token,
-            url: `${REPO_URL}/${repoId}/hooks?pagelen=30&page=${page}`
-        });
-
-        const hooks = response.body;
-        const result = hooks.values.find(webhook => webhook.url === url);
-
-        if (!result && hooks.size >= WEBHOOK_PAGE_SIZE) {
-            return this._findWebhook({
-                page: page + 1,
-                repoId,
-                token: configToken,
-                url
+        try {
+            const token = await this._getToken();
+            const response = await this.breaker.runCommand({
+                method: 'GET',
+                token,
+                url: `${REPO_URL}/${repoId}/hooks?pagelen=30&page=${page}`
             });
-        }
 
-        return result;
+            const hooks = response.body;
+            const result = hooks.values.find(webhook => webhook.url === url);
+
+            if (!result && hooks.size >= WEBHOOK_PAGE_SIZE) {
+                return this._findWebhook({
+                    page: page + 1,
+                    repoId,
+                    token: configToken,
+                    url
+                });
+            }
+
+            return result;
+        } catch (err) {
+            logger.error('Failed to findWebhook: ', err);
+            throw err;
+        }
     }
 
     /**
@@ -280,7 +286,12 @@ class BitbucketScm extends Scm {
             params.method = 'PUT';
         }
 
-        return this.breaker.runCommand(params);
+        try {
+            return this.breaker.runCommand(params);
+        } catch (err) {
+            logger.error('Failed to createWebhook: ', err);
+            throw err;
+        }
     }
 
     /**
@@ -331,7 +342,7 @@ class BitbucketScm extends Scm {
         );
         // TODO: add logic to fetch default branch
         // See https://jira.atlassian.com/browse/BCLOUD-20212
-        const branch = branchFromCheckout || 'master';
+        const branch = branchFromCheckout || DEFAULT_BRANCH;
         const branchUrl = `${REPO_URL}/${username}/${repo}/refs/branches/${branch}`;
         const token = await this._getToken();
 
@@ -345,15 +356,15 @@ class BitbucketScm extends Scm {
             throwError('This checkoutUrl is not supported for your current login host.', 400);
         }
 
-        const response = await this.breaker.runCommand(options);
+        try {
+            const response = await this.breaker.runCommand(options);
+            const scmUri = `${hostname}:${username}/${response.body.target.repository.uuid}:${branch}`;
 
-        if (response.statusCode !== 200) {
-            throwError(`STATUS CODE ${response.statusCode}: ${JSON.stringify(response.body)}`, response.statusCode);
+            return sourceDir ? `${scmUri}:${sourceDir}` : scmUri;
+        } catch (err) {
+            logger.error('Failed to parseUrl: ', err);
+            throw err;
         }
-
-        const scmUri = `${hostname}:${username}/${response.body.target.repository.uuid}:${branch}`;
-
-        return sourceDir ? `${scmUri}:${sourceDir}` : scmUri;
     }
 
     /**
@@ -481,19 +492,19 @@ class BitbucketScm extends Scm {
             token
         };
 
-        const response = await this.breaker.runCommand(options);
-        const { body } = response;
+        try {
+            const { body } = await this.breaker.runCommand(options);
 
-        if (response.statusCode !== 200) {
-            throw new Error(`STATUS CODE ${response.statusCode}: ${JSON.stringify(body)}`);
+            return {
+                url: body.links.html.href,
+                name: body.full_name,
+                branch,
+                rootDir: rootDir || ''
+            };
+        } catch (err) {
+            logger.error('Failed to decorateUrl: ', err);
+            throw err;
         }
-
-        return {
-            url: body.links.html.href,
-            name: body.full_name,
-            branch,
-            rootDir: rootDir || ''
-        };
     }
 
     /**
@@ -514,22 +525,21 @@ class BitbucketScm extends Scm {
             token
         };
 
-        const response = await this.breaker.runCommand(options);
-        const { body } = response;
+        try {
+            const { body } = await this.breaker.runCommand(options);
 
-        if (response.statusCode !== 200) {
-            throw new Error(`STATUS CODE ${response.statusCode}: ${JSON.stringify(body)}`);
+            return this._decorateAuthor({
+                username: body.author.user.uuid,
+                token: configToken
+            }).then(author => ({
+                url: body.links.html.href,
+                message: body.message,
+                author
+            }));
+        } catch (err) {
+            logger.error('Failed to decorateCommit: ', err);
+            throw err;
         }
-
-        // eslint-disable-next-line
-        return this._decorateAuthor({
-            username: body.author.user.uuid,
-            token: configToken
-        }).then(author => ({
-            url: body.links.html.href,
-            message: body.message,
-            author
-        }));
     }
 
     /**
@@ -555,13 +565,14 @@ class BitbucketScm extends Scm {
             token
         };
 
-        const response = await this.breaker.runCommand(options);
+        try {
+            const { body } = await this.breaker.runCommand(options);
 
-        if (response.statusCode !== 200) {
-            throw new Error(`STATUS CODE ${response.statusCode}: ${JSON.stringify(response.body)}`);
+            return body.target.hash;
+        } catch (err) {
+            logger.error('Failed to getCommitSha: ', err);
+            throw err;
         }
-
-        return response.body.target.hash;
     }
 
     /**
@@ -649,12 +660,17 @@ class BitbucketScm extends Scm {
         const [owner, uuid] = scm.repoId.split('/');
         const token = await this._getToken();
 
-        // First, check to see if the repository exists
-        await this.breaker.runCommand({
-            url: `${REPO_URL}/${owner}/${uuid}`,
-            method: 'GET',
-            token
-        });
+        try {
+            // First, check to see if the repository exists
+            await this.breaker.runCommand({
+                url: `${REPO_URL}/${owner}/${uuid}`,
+                method: 'GET',
+                token
+            });
+        } catch (err) {
+            logger.error('Failed to get repository: ', err);
+            throw err;
+        }
 
         const getPerm = async desiredAccess => {
             const options = {
@@ -671,17 +687,18 @@ class BitbucketScm extends Scm {
                 options.url = `${options.url}`;
             }
 
-            return this.breaker.runCommand(options).then(response => {
-                if (response.statusCode !== 200) {
-                    throw new Error(`STATUS CODE ${response.statusCode}: ${JSON.stringify(response.body)}`);
-                }
+            try {
+                return this.breaker.runCommand(options).then(response => {
+                    if (response.body.values) {
+                        return response.body.values.some(r => r.uuid === uuid);
+                    }
 
-                if (response.body.values) {
-                    return response.body.values.some(r => r.uuid === uuid);
-                }
-
-                return false;
-            });
+                    return false;
+                });
+            } catch (err) {
+                logger.error('Failed to get permissions: ', err);
+                throw err;
+            }
         };
 
         return Promise.all([getPerm('admin'), getPerm('push'), getPerm('pull')]).then(([admin, push, pull]) => ({
@@ -704,7 +721,7 @@ class BitbucketScm extends Scm {
      * @param  {Number}   config.pipelineId   Pipeline ID
      * @return {Promise}
      */
-    _updateCommitStatus({ scmUri, sha, buildStatus, url, jobName, pipelineId, token }) {
+    async _updateCommitStatus({ scmUri, sha, buildStatus, url, jobName, pipelineId, token }) {
         const scm = getScmUriParts(scmUri);
         let context = `Screwdriver/${pipelineId}/`;
 
@@ -722,13 +739,16 @@ class BitbucketScm extends Scm {
             token: decodeURIComponent(token)
         };
 
-        return this.breaker.runCommand(options).then(response => {
-            if (response.statusCode !== 201 && response.statusCode !== 200) {
-                throw new Error(`STATUS CODE ${response.statusCode}: ${JSON.stringify(response.body)}`);
+        try {
+            return this.breaker.runCommand(options);
+        } catch (err) {
+            if (err.statusCode !== 201 && err.statusCode !== 200) {
+                logger.error('Failed to getFile: ', err);
+                throw err;
             }
 
-            return response;
-        });
+            return undefined;
+        }
     }
 
     /**
@@ -895,18 +915,23 @@ class BitbucketScm extends Scm {
         const { repoId } = getScmUriParts(scmUri);
         const token = await this._getToken();
 
-        const response = await this.breaker.runCommand({
-            url: `${REPO_URL}/${repoId}/pullrequests`,
-            method: 'GET',
-            token
-        });
+        try {
+            const response = await this.breaker.runCommand({
+                url: `${REPO_URL}/${repoId}/pullrequests`,
+                method: 'GET',
+                token
+            });
 
-        const prList = response.body.values;
+            const prList = response.body.values;
 
-        return prList.map(pr => ({
-            name: `PR-${pr.id}`,
-            ref: pr.source.branch.name
-        }));
+            return prList.map(pr => ({
+                name: `PR-${pr.id}`,
+                ref: pr.source.branch.name
+            }));
+        } catch (err) {
+            logger.error('Failed to getOpenedPRs: ', err);
+            throw err;
+        }
     }
 
     /**
@@ -922,21 +947,25 @@ class BitbucketScm extends Scm {
         const { repoId } = getScmUriParts(scmUri);
         const token = await this._getToken();
 
-        const response = await this.breaker.runCommand({
-            url: `${REPO_URL}/${repoId}/pullrequests/${prNum}`,
-            method: 'GET',
-            token
-        });
+        try {
+            const response = await this.breaker.runCommand({
+                url: `${REPO_URL}/${repoId}/pullrequests/${prNum}`,
+                method: 'GET',
+                token
+            });
+            const pr = response.body;
 
-        const pr = response.body;
-
-        return {
-            name: `PR-${pr.id}`,
-            ref: pr.source.branch.name,
-            sha: pr.source.commit.hash,
-            url: pr.links.html.href,
-            baseBranch: pr.source.branch.name
-        };
+            return {
+                name: `PR-${pr.id}`,
+                ref: pr.source.branch.name,
+                sha: pr.source.commit.hash,
+                url: pr.links.html.href,
+                baseBranch: pr.source.branch.name
+            };
+        } catch (err) {
+            logger.error('Failed to getPrInfo: ', err);
+            throw err;
+        }
     }
 
     /**
@@ -995,22 +1024,28 @@ class BitbucketScm extends Scm {
      */
     async _findBranches(config) {
         const token = await this._getToken();
-        const response = await this.breaker.runCommand({
-            method: 'GET',
-            token,
-            url: `${REPO_URL}/${config.repoId}/refs/branches?pagelen=${BRANCH_PAGE_SIZE}&page=${config.page}`
-        });
 
-        let branches = hoek.reach(response, 'body.values');
+        try {
+            const response = await this.breaker.runCommand({
+                method: 'GET',
+                token,
+                url: `${REPO_URL}/${config.repoId}/refs/branches?pagelen=${BRANCH_PAGE_SIZE}&page=${config.page}`
+            });
 
-        if (branches.length === BRANCH_PAGE_SIZE) {
-            config.page += 1;
-            const nextPageBranches = await this._findBranches(config);
+            let branches = hoek.reach(response, 'body.values');
 
-            branches = branches.concat(nextPageBranches);
+            if (branches.length === BRANCH_PAGE_SIZE) {
+                config.page += 1;
+                const nextPageBranches = await this._findBranches(config);
+
+                branches = branches.concat(nextPageBranches);
+            }
+
+            return branches.map(branch => ({ name: hoek.reach(branch, 'name') }));
+        } catch (err) {
+            logger.error('Failed to findBranches: ', err);
+            throw err;
         }
-
-        return branches.map(branch => ({ name: hoek.reach(branch, 'name') }));
     }
 
     /**
@@ -1074,17 +1109,17 @@ class BitbucketScm extends Scm {
             };
         }
 
-        const response = await this.breaker.runCommand(params);
-        const { body } = response;
+        try {
+            const { body } = await this.breaker.runCommand(params);
 
-        if (response.statusCode !== 200) {
-            throw new Error(`STATUS CODE ${response.statusCode}: ${JSON.stringify(body)}`);
+            this.token = body.access_token;
+            this.refreshToken = body.refresh_token;
+            // convert the expires in to a microsecond timestamp from a # of seconds value
+            this.expiresIn = new Date().getTime() + body.expires_in * 1000;
+        } catch (err) {
+            logger.error('Failed to refreshToken: ', err);
+            throw err;
         }
-
-        this.token = body.access_token;
-        this.refreshToken = body.refresh_token;
-        // convert the expires in to a microsecond timestamp from a # of seconds value
-        this.expiresIn = new Date().getTime() + body.expires_in * 1000;
     }
 }
 
