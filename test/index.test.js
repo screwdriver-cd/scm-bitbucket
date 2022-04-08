@@ -284,30 +284,6 @@ describe('index', function() {
                 });
         });
 
-        it('rejects if status code is not 200 & 404', () => {
-            fakeResponse = {
-                statusCode: 500,
-                body: {
-                    error: {
-                        message: 'Internal Server Error'
-                    }
-                }
-            };
-
-            requestMock.resolves(fakeResponse);
-
-            return scm
-                .parseUrl({
-                    checkoutUrl: 'https://batman@bitbucket.org/batman/test.git#mynewbranch',
-                    token
-                })
-                .then(() => assert.fail('Should not get here'))
-                .catch(error => {
-                    assert.calledWith(requestMock, expectedOptions);
-                    assert.match(error.message, 'STATUS CODE 500');
-                });
-        });
-
         it('rejects when passed checkoutUrl of another host', () => {
             const expectedError = new Error('This checkoutUrl is not supported for your current login host.');
 
@@ -522,7 +498,7 @@ describe('index', function() {
                 }
             };
 
-            requestMock.resolves(fakeResponse);
+            requestMock.rejects(fakeResponse);
 
             const expected = {
                 url: '',
@@ -546,32 +522,6 @@ describe('index', function() {
                 .then(decorated => {
                     assert.calledWith(requestMock, expectedFabricatedOptions);
                     assert.deepEqual(decorated, expected);
-                });
-        });
-        it('rejects if status code is not 200', () => {
-            fakeResponse = {
-                statusCode: 404,
-                body: {
-                    error: {
-                        message: 'Resource not found',
-                        detail: 'There is no API hosted at this URL'
-                    }
-                }
-            };
-
-            requestMock.resolves(fakeResponse);
-
-            return scm
-                .decorateAuthor({
-                    username: '{4f1a9b7f-586e-4e80-b9eb-a7589b4a165f}',
-                    token
-                })
-                .then(() => {
-                    assert.fail('Should not get here');
-                })
-                .catch(error => {
-                    assert.calledWith(requestMock, expectedOptions);
-                    assert.match(error.message, 'STATUS CODE 404');
                 });
         });
 
@@ -646,33 +596,6 @@ describe('index', function() {
                 .then(decorated => {
                     assert.calledWith(requestMock, expectedOptions);
                     assert.deepEqual(decorated, expected);
-                });
-        });
-
-        it('rejects if status code is not 200', () => {
-            fakeResponse = {
-                statusCode: 404,
-                body: {
-                    error: {
-                        message: 'Resource not found',
-                        detail: 'There is no API hosted at this URL'
-                    }
-                }
-            };
-
-            requestMock.withArgs(repoOptions).resolves(fakeResponse);
-
-            return scm
-                .decorateUrl({
-                    scmUri: 'hostName:repoId:branchName',
-                    token
-                })
-                .then(() => {
-                    assert.fail('Should not get here');
-                })
-                .catch(error => {
-                    assert.calledWith(requestMock, expectedOptions);
-                    assert.match(error.message, 'STATUS CODE 404');
                 });
         });
 
@@ -778,34 +701,6 @@ describe('index', function() {
                 });
         });
 
-        it('rejects if status code is not 200', () => {
-            fakeResponse = {
-                statusCode: 404,
-                body: {
-                    error: {
-                        message: 'Resource not found',
-                        detail: 'There is no API hosted at this URL'
-                    }
-                }
-            };
-
-            requestMock.withArgs(repoOptions).resolves(fakeResponse);
-
-            return scm
-                .decorateCommit({
-                    sha,
-                    scmUri: 'hostName:repoId:branchName',
-                    token
-                })
-                .then(() => {
-                    assert.fail('Should not get here');
-                })
-                .catch(error => {
-                    assert.calledOnce(requestMock);
-                    assert.match(error.message, 'STATUS CODE 404');
-                });
-        });
-
         it('rejects if fails', () => {
             const err = new Error('Bitbucket API error');
 
@@ -904,35 +799,6 @@ describe('index', function() {
                 });
         });
 
-        it('rejects if status code is not 200', () => {
-            fakeResponse = {
-                statusCode: 404,
-                body: {
-                    error: {
-                        message: 'Resource not found',
-                        detail: 'There is no API hosted at this URL'
-                    }
-                }
-            };
-
-            requestMock.resolves(fakeResponse);
-
-            return scm
-                .getCommitSha({
-                    scmUri,
-                    token
-                })
-                .then(() => {
-                    assert.fail('Should not get here');
-                })
-                .catch(error => {
-                    assert.match(
-                        error.message,
-                        'STATUS CODE 404: {"error":{"message":"Resource not found","detail":"There is no API hosted at this URL"}}'
-                    );
-                });
-        });
-
         it('rejects if fails', () => {
             const err = new Error('Bitbucket API error');
 
@@ -966,7 +832,8 @@ describe('index', function() {
                 method: 'GET',
                 context: {
                     token: systemToken
-                }
+                },
+                responseType: 'buffer'
             };
             fakeResponse = {
                 statusCode: 200,
@@ -1031,17 +898,12 @@ describe('index', function() {
                 }
             };
 
-            requestMock.resolves(fakeResponse);
+            requestMock.rejects(fakeResponse);
 
-            return scm
-                .getFile(params)
-                .then(() => {
-                    assert.fail('Should not get here');
-                })
-                .catch(error => {
-                    assert.calledWith(requestMock, expectedOptions);
-                    assert.match(error.message, 'STATUS CODE 404');
-                });
+            return scm.getFile(params).then(content => {
+                assert.calledWith(requestMock, expectedOptions);
+                assert.deepEqual(content, '');
+            });
         });
 
         it('rejects if fails', () => {
@@ -1253,7 +1115,7 @@ describe('index', function() {
             requestMock.withArgs(repos[1]).resolves(repoResponse);
             requestMock.withArgs(repos[2]).resolves(repoResponse);
             requestMock.withArgs(repos[3]).resolves(repoResponse);
-            requestMock.withArgs(repos[4]).resolves(repoNotFoundResponse);
+            requestMock.withArgs(repos[4]).rejects(repoNotFoundResponse);
 
             requestMock.withArgs(pulls[0]).resolves(repoResponse);
             requestMock.withArgs(pulls[1]).resolves(readResponses[0]);
@@ -1354,33 +1216,6 @@ describe('index', function() {
                 });
         });
 
-        it('rejects if status code is not 200', () => {
-            const scmUri = 'hostName:repoIdPrefix/repoIdSuffix:branchName';
-            const fakeResponse = {
-                statusCode: 404,
-                body: {
-                    error: {
-                        message: 'Resource not found',
-                        detail: 'There is no API hosted at this URL'
-                    }
-                }
-            };
-
-            requestMock.withArgs(pull).resolves(fakeResponse);
-
-            return scm
-                .getPermissions({
-                    scmUri,
-                    token
-                })
-                .then(() => {
-                    assert.fail('Should not get here');
-                })
-                .catch(error => {
-                    assert.match(error.message, 'STATUS CODE 404');
-                });
-        });
-
         it('rejects if fails', () => {
             const error = new Error('Bitbucket API error');
             const scmUri = 'hostName:repoIdPrefix/repoIdSuffix:branchName';
@@ -1404,7 +1239,7 @@ describe('index', function() {
             const error = new Error('Not found');
             const scmUri = 'hostName:repoIdPrefix/fake:branchName';
 
-            error.code = 404;
+            error.statusCode = 404;
 
             return scm
                 .getPermissions({
@@ -1469,29 +1304,6 @@ describe('index', function() {
             scm.updateCommitStatus(config).then(() => {
                 assert.calledWith(requestMock, expectedOptions);
             }));
-
-        it('rejects if status code is not 201 or 200', () => {
-            fakeResponse = {
-                statusCode: 401,
-                body: {
-                    error: {
-                        message: 'Access token expired'
-                    }
-                }
-            };
-
-            requestMock.resolves(fakeResponse);
-
-            return scm
-                .updateCommitStatus(config)
-                .then(() => {
-                    assert.fail('Should not get here');
-                })
-                .catch(error => {
-                    assert.calledWith(requestMock, expectedOptions);
-                    assert.match(error.message, 'STATUS CODE 401');
-                });
-        });
 
         it('rejects if fails', () => {
             const err = new Error('Bitbucket API error');
@@ -1995,6 +1807,25 @@ describe('index', function() {
                     ]);
                 });
         });
+
+        it('rejects if fails', () => {
+            const err = new Error('Bitbucket API error');
+
+            requestMock.rejects(err);
+
+            return scm
+                ._getOpenedPRs({
+                    scmUri,
+                    token: oauthToken
+                })
+                .then(() => {
+                    assert.fail('Should not get here');
+                })
+                .catch(error => {
+                    assert.calledWith(requestMock, expectedOptions);
+                    assert.equal(error, err);
+                });
+        });
     });
 
     describe('_getPrInfo', () => {
@@ -2046,6 +1877,26 @@ describe('index', function() {
                         url: 'https://api.bitbucket.org/2.0/repositories/repoId/pullrequests/1',
                         baseBranch: 'testbranch'
                     });
+                });
+        });
+
+        it('rejects if fails', () => {
+            const err = new Error('Bitbucket API error');
+
+            requestMock.rejects(err);
+
+            return scm
+                ._getPrInfo({
+                    scmUri,
+                    token: oauthToken,
+                    prNum
+                })
+                .then(() => {
+                    assert.fail('Should not get here');
+                })
+                .catch(error => {
+                    assert.calledWith(requestMock, expectedOptions);
+                    assert.equal(error, err);
                 });
         });
     });
@@ -2254,7 +2105,8 @@ describe('index', function() {
                 })
                 .catch(done);
         });
-        it('refresh existing token', done => {
+
+        it('refreshes existing token', done => {
             // mark the token expire to allow the scm to try and load it
             scm.token = systemToken;
             scm.refreshToken = 'myRefreshToken2';
