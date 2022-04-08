@@ -446,14 +446,13 @@ class BitbucketScm extends Scm {
                 token
             };
 
-            const response = await this.breaker.runCommand(options);
-            const { body } = response;
+            const { body } = await this.breaker.runCommand(options);
 
             return {
-                url: body.links.html.href,
-                name: body.display_name,
-                username: body.uuid,
-                avatar: body.links.avatar.href
+                url: hoek.reach(body, 'links.html.href'),
+                name: hoek.reach(body, 'display_name'),
+                username: hoek.reach(body, 'uuid'),
+                avatar: hoek.reach(body, 'links.avatar.href')
             };
         } catch (err) {
             if (err.statusCode === 404) {
@@ -742,7 +741,7 @@ class BitbucketScm extends Scm {
         try {
             return this.breaker.runCommand(options);
         } catch (err) {
-            if (err.statusCode !== 201 && err.statusCode !== 200) {
+            if (err.statusCode !== 422) {
                 logger.error('Failed to getFile: ', err);
                 throw err;
             }
