@@ -22,7 +22,7 @@ const API_URL_V2 = 'https://api.bitbucket.org/2.0';
 
 sinon.assert.expose(assert, { prefix: '' });
 
-describe('index', function() {
+describe('index', function () {
     // Time not important. Only life important.
     this.timeout(5000);
 
