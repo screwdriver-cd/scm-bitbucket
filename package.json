@@ -1,6 +1,6 @@
 {
   "name": "screwdriver-scm-bitbucket",
-  "version": "4.0.0",
+  "version": "5.0.0",
   "description": "This scm plugin extends the [scm-base-class](https://github.com/screwdriver-cd/scm-base), and provides methods to fetch and update data in Bitbucket.",
   "main": "index.js",
   "scripts": {
@@ -35,23 +35,23 @@
     "debug": false
   },
   "devDependencies": {
-    "chai": "^4.3.6",
-    "eslint": "^7.32.0",
-    "eslint-config-screwdriver": "^5.0.1",
-    "mocha": "^8.4.0",
+    "chai": "^4.3.7",
+    "eslint": "^8.28.0",
+    "eslint-config-screwdriver": "^7.0.0",
+    "mocha": "^10.1.0",
     "mocha-multi-reporters": "^1.5.1",
     "mocha-sonarqube-reporter": "^1.0.2",
-    "mockery": "^2.0.0",
-    "nyc": "^15.0.0",
-    "sinon": "^9.0.0"
+    "mockery": "^2.1.0",
+    "nyc": "^15.1.0",
+    "sinon": "^15.0.0"
   },
   "dependencies": {
-    "@hapi/hoek": "^9.2.1",
-    "circuit-fuses": "^4.1.2",
-    "joi": "^17.6.0",
-    "screwdriver-data-schema": "^21.22.2",
-    "screwdriver-logger": "^1.1.0",
-    "screwdriver-request": "^1.0.3",
-    "screwdriver-scm-base": "^7.4.0"
+    "@hapi/hoek": "^10.0.1",
+    "circuit-fuses": "^5.0.0",
+    "joi": "^17.7.0",
+    "screwdriver-data-schema": "^22.0.1",
+    "screwdriver-logger": "^2.0.0",
+    "screwdriver-request": "^2.0.1",
+    "screwdriver-scm-base": "^8.0.0"
   }
 }

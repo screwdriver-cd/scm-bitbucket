@@ -132,32 +132,19 @@ class BitbucketScm extends Scm {
             joi
                 .object()
                 .keys({
-                    username: joi
-                        .string()
-                        .optional()
-                        .default('sd-buildbot'),
-                    email: joi
-                        .string()
-                        .optional()
-                        .default('dev-null@screwdriver.cd'),
+                    username: joi.string().optional().default('sd-buildbot'),
+                    email: joi.string().optional().default('dev-null@screwdriver.cd'),
                     readOnly: joi
                         .object()
                         .keys({
                             enabled: joi.boolean().optional(),
                             username: joi.string().optional(),
                             accessToken: joi.string().optional(),
-                            cloneType: joi
-                                .string()
-                                .valid('https', 'ssh')
-                                .optional()
-                                .default('https')
+                            cloneType: joi.string().valid('https', 'ssh').optional().default('https')
                         })
                         .optional()
                         .default({}),
-                    https: joi
-                        .boolean()
-                        .optional()
-                        .default(false),
+                    https: joi.boolean().optional().default(false),
                     oauthClientId: joi.string().required(),
                     oauthClientSecret: joi.string().required(),
                     fusebox: joi.object().default({})
@@ -336,10 +323,13 @@ class BitbucketScm extends Scm {
      * @return {Promise}                        Resolves to scmUri
      */
     async _parseUrl({ checkoutUrl, rootDir }) {
-        const { branch: branchFromCheckout, username, repo, hostname, rootDir: sourceDir } = getRepoInfo(
-            checkoutUrl,
-            rootDir
-        );
+        const {
+            branch: branchFromCheckout,
+            username,
+            repo,
+            hostname,
+            rootDir: sourceDir
+        } = getRepoInfo(checkoutUrl, rootDir);
         // TODO: add logic to fetch default branch
         // See https://jira.atlassian.com/browse/BCLOUD-20212
         const branch = branchFromCheckout || DEFAULT_BRANCH;
