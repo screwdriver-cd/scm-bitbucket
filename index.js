@@ -644,10 +644,10 @@ class BitbucketScm extends Scm {
      * @param  {String}   config.token      The token used to authenticate to the SCM
      * @return {Promise}                    Resolves to permissions object with admin, push, pull
      */
-    async _getPermissions({ scmUri }) {
+    async _getPermissions(config) {
+        const { scmUri, token } = config;
         const scm = getScmUriParts(scmUri);
         const [owner, uuid] = scm.repoId.split('/');
-        const token = await this._getToken();
 
         try {
             // First, check to see if the repository exists

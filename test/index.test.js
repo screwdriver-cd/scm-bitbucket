@@ -924,139 +924,64 @@ describe('index', function () {
     });
 
     describe('_getPermissions', () => {
-        const repos = [
-            {
-                url: `${API_URL_V2}/repositories/repoIdPrefix/repoIdSuffix`,
-                method: 'GET',
-                context: {
-                    token: systemToken
-                }
-            },
-            {
-                url: `${API_URL_V2}/repositories/repoIdPrefix/repoIdSuffix1`,
-                method: 'GET',
-                context: {
-                    token: systemToken
-                }
-            },
-            {
-                url: `${API_URL_V2}/repositories/repoIdPrefix/repoIdSuffix2`,
-                method: 'GET',
-                context: {
-                    token: systemToken
-                }
-            },
-            {
-                url: `${API_URL_V2}/repositories/repoIdPrefix/repoIdSuffix3`,
-                method: 'GET',
-                context: {
-                    token: systemToken
-                }
-            },
-            {
-                url: `${API_URL_V2}/repositories/repoIdPrefix/fake`,
-                method: 'GET',
-                context: {
-                    token: systemToken
-                }
+        const baseRequestOptions = {
+            method: 'GET',
+            context: {
+                token
             }
+        };
+        const repos = [
+            { ...baseRequestOptions, url: `${API_URL_V2}/repositories/repoIdPrefix/repoIdSuffix` },
+            { ...baseRequestOptions, url: `${API_URL_V2}/repositories/repoIdPrefix/repoIdSuffix1` },
+            { ...baseRequestOptions, url: `${API_URL_V2}/repositories/repoIdPrefix/repoIdSuffix2` },
+            { ...baseRequestOptions, url: `${API_URL_V2}/repositories/repoIdPrefix/repoIdSuffix3` },
+            { ...baseRequestOptions, url: `${API_URL_V2}/repositories/repoIdPrefix/fake` }
         ];
 
         const pull = {
-            url: `${API_URL_V2}/repositories/repoIdPrefix?q=uuid%3D%22repoIdSuffix%22`,
-            method: 'GET',
-            context: {
-                token: systemToken
-            }
+            ...baseRequestOptions,
+            url: `${API_URL_V2}/repositories/repoIdPrefix?q=uuid%3D%22repoIdSuffix%22`
         };
         const pulls = [
-            {
-                url: `${API_URL_V2}/repositories/repoIdPrefix?q=uuid%3D%22repoIdSuffix%22`,
-                method: 'GET',
-                context: {
-                    token: systemToken
-                }
-            },
-            {
-                url: `${API_URL_V2}/repositories/repoIdPrefix?q=uuid%3D%22repoIdSuffix1%22`,
-                method: 'GET',
-                context: {
-                    token: systemToken
-                }
-            },
-            {
-                url: `${API_URL_V2}/repositories/repoIdPrefix?q=uuid%3D%22repoIdSuffix2%22`,
-                method: 'GET',
-                context: {
-                    token: systemToken
-                }
-            },
-            {
-                url: `${API_URL_V2}/repositories/repoIdPrefix?q=uuid%3D%22repoIdSuffix3%22`,
-                method: 'GET',
-                context: {
-                    token: systemToken
-                }
-            }
+            { ...baseRequestOptions, url: `${API_URL_V2}/repositories/repoIdPrefix?q=uuid%3D%22repoIdSuffix%22` },
+            { ...baseRequestOptions, url: `${API_URL_V2}/repositories/repoIdPrefix?q=uuid%3D%22repoIdSuffix1%22` },
+            { ...baseRequestOptions, url: `${API_URL_V2}/repositories/repoIdPrefix?q=uuid%3D%22repoIdSuffix2%22` },
+            { ...baseRequestOptions, url: `${API_URL_V2}/repositories/repoIdPrefix?q=uuid%3D%22repoIdSuffix3%22` }
         ];
         const pushes = [
             {
-                url: `${API_URL_V2}/repositories/repoIdPrefix?q=uuid%3D%22repoIdSuffix%22&role=contributor`,
-                method: 'GET',
-                context: {
-                    token: systemToken
-                }
+                ...baseRequestOptions,
+                url: `${API_URL_V2}/repositories/repoIdPrefix?q=uuid%3D%22repoIdSuffix%22&role=contributor`
             },
             {
-                url: `${API_URL_V2}/repositories/repoIdPrefix?q=uuid%3D%22repoIdSuffix1%22&role=contributor`,
-                method: 'GET',
-                context: {
-                    token: systemToken
-                }
+                ...baseRequestOptions,
+                url: `${API_URL_V2}/repositories/repoIdPrefix?q=uuid%3D%22repoIdSuffix1%22&role=contributor`
             },
             {
-                url: `${API_URL_V2}/repositories/repoIdPrefix?q=uuid%3D%22repoIdSuffix2%22&role=contributor`,
-                method: 'GET',
-                context: {
-                    token: systemToken
-                }
+                ...baseRequestOptions,
+                url: `${API_URL_V2}/repositories/repoIdPrefix?q=uuid%3D%22repoIdSuffix2%22&role=contributor`
             },
             {
-                url: `${API_URL_V2}/repositories/repoIdPrefix?q=uuid%3D%22repoIdSuffix3%22&role=contributor`,
-                method: 'GET',
-                context: {
-                    token: systemToken
-                }
+                ...baseRequestOptions,
+                url: `${API_URL_V2}/repositories/repoIdPrefix?q=uuid%3D%22repoIdSuffix3%22&role=contributor`
             }
         ];
         const admins = [
             {
-                url: `${API_URL_V2}/repositories/repoIdPrefix?q=uuid%3D%22repoIdSuffix%22&role=admin`,
-                method: 'GET',
-                context: {
-                    token: systemToken
-                }
+                ...baseRequestOptions,
+                url: `${API_URL_V2}/repositories/repoIdPrefix?q=uuid%3D%22repoIdSuffix%22&role=admin`
             },
             {
-                url: `${API_URL_V2}/repositories/repoIdPrefix?q=uuid%3D%22repoIdSuffix1%22&role=admin`,
-                method: 'GET',
-                context: {
-                    token: systemToken
-                }
+                ...baseRequestOptions,
+                url: `${API_URL_V2}/repositories/repoIdPrefix?q=uuid%3D%22repoIdSuffix1%22&role=admin`
             },
             {
-                url: `${API_URL_V2}/repositories/repoIdPrefix?q=uuid%3D%22repoIdSuffix2%22&role=admin`,
-                method: 'GET',
-                context: {
-                    token: systemToken
-                }
+                ...baseRequestOptions,
+                url: `${API_URL_V2}/repositories/repoIdPrefix?q=uuid%3D%22repoIdSuffix2%22&role=admin`
             },
             {
-                url: `${API_URL_V2}/repositories/repoIdPrefix?q=uuid%3D%22repoIdSuffix3%22&role=admin`,
-                method: 'GET',
-                context: {
-                    token: systemToken
-                }
+                ...baseRequestOptions,
+                url: `${API_URL_V2}/repositories/repoIdPrefix?q=uuid%3D%22repoIdSuffix3%22&role=admin`
             }
         ];
 
