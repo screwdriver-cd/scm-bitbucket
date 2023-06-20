@@ -471,6 +471,7 @@ describe('index', function () {
 
         it('resolves to correct decorated author', () => {
             const expected = {
+                id: '{4f1a9b7f-586e-4e80-b9eb-a7589b4a165f}',
                 url: 'https://bitbucket.org/%7B4f1a9b7f-586e-4e80-b9eb-a7589b4a165f%7D/',
                 name: 'Batman',
                 username: '{4f1a9b7f-586e-4e80-b9eb-a7589b4a165f}',
@@ -682,6 +683,7 @@ describe('index', function () {
                 url: selfLink,
                 message: 'testing',
                 author: {
+                    id: '{uuid}',
                     url: 'https://bitbucket.org/%7Buuid%7D/',
                     name: 'displayName',
                     username: '{uuid}',

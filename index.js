@@ -439,6 +439,7 @@ class BitbucketScm extends Scm {
             const { body } = await this.breaker.runCommand(options);
 
             return {
+                id: hoek.reach(body, 'uuid'),
                 url: hoek.reach(body, 'links.html.href'),
                 name: hoek.reach(body, 'display_name'),
                 username: hoek.reach(body, 'uuid'),
