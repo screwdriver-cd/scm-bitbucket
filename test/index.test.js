@@ -1888,7 +1888,7 @@ describe('index', function () {
             });
         });
 
-        it('returns a false when _parseHook() returns null.', () => {
+        it('returns a true when _parseHook() returns null.', () => {
             headers['x-event-key'] = 'issue:created';
 
             return scm.canHandleWebhook(headers, testPayloadPush).then(result => {
