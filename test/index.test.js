@@ -14,7 +14,10 @@ const testRootDirCommands = require('./data/rootDirCommands.json');
 const testPayloadOpen = require('./data/pr.opened.json');
 const testPayloadSync = require('./data/pr.sync.json');
 const testPayloadClose = require('./data/pr.closed.json');
+const testPayloadPrCommentCreate = require('./data/pr.commentCreate.json');
+const testPayloadFork = require('./data/repo.fork.json');
 const testPayloadPush = require('./data/repo.push.json');
+const testPayloadIssueCreate = require('./data/issue.create.json');
 const testPayloadAccessToken = require('./data/access.token.json');
 const token = 'myAccessToken';
 const systemToken = 'myAccessToken2';
@@ -419,7 +422,7 @@ describe('index', function () {
                 'x-event-key': 'repo:fork'
             };
 
-            return scm.parseHook(repoFork, {}).then(result => assert.deepEqual(result, null));
+            return scm.parseHook(repoFork, testPayloadFork).then(result => assert.deepEqual(result, null));
         });
 
         it('resolves null if events are not supported: prComment', () => {
@@ -427,7 +430,7 @@ describe('index', function () {
                 'x-event-key': 'pullrequest:comment_created'
             };
 
-            return scm.parseHook(prComment, {}).then(result => assert.deepEqual(result, null));
+            return scm.parseHook(prComment, testPayloadPrCommentCreate).then(result => assert.deepEqual(result, null));
         });
 
         it('resolves null if events are not supported: issueCreated', () => {
@@ -435,7 +438,7 @@ describe('index', function () {
                 'x-event-key': 'issue:created'
             };
 
-            return scm.parseHook(issueCreated, {}).then(result => assert.deepEqual(result, null));
+            return scm.parseHook(issueCreated, testPayloadIssueCreate).then(result => assert.deepEqual(result, null));
         });
     });
 
@@ -1885,17 +1888,17 @@ describe('index', function () {
             });
         });
 
-        it('returns a false when _parseHook() returns null.', () => {
+        it('returns a true when _parseHook() returns null.', () => {
             headers['x-event-key'] = 'issue:created';
 
             return scm.canHandleWebhook(headers, testPayloadPush).then(result => {
-                assert.isFalse(result);
+                assert.isTrue(result);
             });
         });
 
         it('returns false when an error is thrown', () => {
             // eslint-disable-next-line no-underscore-dangle
-            scm._parseHook = () => Promise.resolve({});
+            scm._parseHook = () => Promise.reject(new Error('Test error'));
 
             return scm.canHandleWebhook(headers, testPayloadPush).then(result => {
                 assert.strictEqual(result, false);

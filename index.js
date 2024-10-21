@@ -365,7 +365,7 @@ class BitbucketScm extends Scm {
      * @param  {Object}  payload  The webhook payload received from the SCM service.
      * @return {Object}           A key-map of data related to the received payload
      */
-    _parseHook(headers, payload) {
+    async _parseHook(headers, payload) {
         const [typeHeader, actionHeader] = headers['x-event-key'].split(':');
         const parsed = {};
         const scmContexts = this._getScmContexts();
@@ -373,23 +373,33 @@ class BitbucketScm extends Scm {
         parsed.hookId = headers['x-request-uuid'];
         parsed.scmContext = scmContexts[0];
 
+        if (hoek.reach(payload, 'repository.links.html.href') === undefined) {
+            throwError(`Invalid webhook payload`, 400);
+        }
+
+        const link = Url.parse(hoek.reach(payload, 'repository.links.html.href'));
+        const checkoutUrl = `${link.protocol}//${link.hostname}${link.pathname}.git`;
+
+        if (!`${link.hostname}${link.pathname}.git`.startsWith(this.hostname)) {
+            throwError(`Incorrect checkout SshHost: ${checkoutUrl}`, 400);
+        }
+
         switch (typeHeader) {
             case 'repo': {
                 if (actionHeader !== 'push') {
-                    return Promise.resolve(null);
+                    return null;
                 }
                 const changes = hoek.reach(payload, 'push.changes');
-                const link = Url.parse(hoek.reach(payload, 'repository.links.html.href'));
 
                 parsed.type = 'repo';
                 parsed.action = 'push';
                 parsed.username = hoek.reach(payload, 'actor.uuid');
-                parsed.checkoutUrl = `${link.protocol}//${link.hostname}${link.pathname}.git`;
+                parsed.checkoutUrl = checkoutUrl;
                 parsed.branch = hoek.reach(changes[0], 'new.name');
                 parsed.sha = hoek.reach(changes[0], 'new.target.hash');
                 parsed.lastCommitMessage = hoek.reach(changes[0], 'new.target.message', { default: '' });
 
-                return Promise.resolve(parsed);
+                return parsed;
             }
             case 'pullrequest': {
                 if (actionHeader === 'created') {
@@ -399,23 +409,21 @@ class BitbucketScm extends Scm {
                 } else if (actionHeader === 'fullfilled' || actionHeader === 'rejected') {
                     parsed.action = 'closed';
                 } else {
-                    return Promise.resolve(null);
+                    return null;
                 }
-
-                const link = Url.parse(hoek.reach(payload, 'repository.links.html.href'));
 
                 parsed.type = 'pr';
                 parsed.username = hoek.reach(payload, 'actor.uuid');
-                parsed.checkoutUrl = `${link.protocol}//${link.hostname}${link.pathname}.git`;
+                parsed.checkoutUrl = checkoutUrl;
                 parsed.branch = hoek.reach(payload, 'pullrequest.destination.branch.name');
                 parsed.sha = hoek.reach(payload, 'pullrequest.source.commit.hash');
                 parsed.prNum = hoek.reach(payload, 'pullrequest.id');
                 parsed.prRef = hoek.reach(payload, 'pullrequest.source.branch.name');
 
-                return Promise.resolve(parsed);
+                return parsed;
             }
             default:
-                return Promise.resolve(null);
+                return null;
         }
     }
 
@@ -991,16 +999,12 @@ class BitbucketScm extends Scm {
      */
     _canHandleWebhook(headers, payload) {
         return this._parseHook(headers, payload)
-            .then(parseResult => {
-                if (parseResult === null) {
-                    return Promise.resolve(false);
-                }
+            .then(() => Promise.resolve(true))
+            .catch(err => {
+                logger.error('Failed to run canHandleWebhook', err);
 
-                const [, checkoutUrlHost] = parseResult.checkoutUrl.split('//');
-
-                return Promise.resolve(checkoutUrlHost.startsWith(this.hostname));
-            })
-            .catch(() => Promise.resolve(false));
+                return Promise.resolve(false);
+            });
     }
 
     /**
