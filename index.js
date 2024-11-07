@@ -805,6 +805,13 @@ class BitbucketScm extends Scm {
             "$(if git --version > /dev/null 2>&1; then echo 'eval'; else echo 'sd-step exec core/git'; fi)";
         const command = [];
 
+        // Set recursive option
+        command.push(
+            'if [ ! -z $GIT_RECURSIVE_CLONE ] && [ $GIT_RECURSIVE_CLONE = false ]; ' +
+                `then export GIT_RECURSIVE_OPTION=""; ` +
+                `else export GIT_RECURSIVE_OPTION="--recursive"; fi`
+        );
+
         // Checkout config pipeline if this is a child pipeline
         if (parentConfig) {
             const parentCheckoutUrl = `${parentConfig.host}/${parentConfig.org}/${parentConfig.repo}`; // URL for https
@@ -828,10 +835,10 @@ class BitbucketScm extends Scm {
             command.push(
                 'if [ ! -z $GIT_SHALLOW_CLONE ] && [ $GIT_SHALLOW_CLONE = false ]; ' +
                     `then ${gitWrapper} ` +
-                    `"git clone --recursive --quiet --progress --branch '${parentBranch}' ` +
+                    `"git clone $GIT_RECURSIVE_OPTION --quiet --progress --branch '${parentBranch}' ` +
                     '$CONFIG_URL $SD_CONFIG_DIR"; ' +
                     `else ${gitWrapper} ` +
-                    '"git clone --depth=50 --no-single-branch --recursive --quiet --progress ' +
+                    '"git clone --depth=50 --no-single-branch $GIT_RECURSIVE_OPTION --quiet --progress ' +
                     `--branch '${parentBranch}' $CONFIG_URL $SD_CONFIG_DIR"; fi`
             );
 
@@ -866,10 +873,10 @@ class BitbucketScm extends Scm {
         command.push(
             'if [ ! -z $GIT_SHALLOW_CLONE ] && [ $GIT_SHALLOW_CLONE = false ]; ' +
                 `then ${gitWrapper} ` +
-                `"git clone --recursive --quiet --progress --branch '${branch}' ` +
+                `"git clone $GIT_RECURSIVE_OPTION --quiet --progress --branch '${branch}' ` +
                 '$SCM_URL $SD_SOURCE_DIR"; ' +
                 `else ${gitWrapper} ` +
-                '"git clone --depth=50 --no-single-branch --recursive --quiet --progress ' +
+                '"git clone --depth=50 --no-single-branch $GIT_RECURSIVE_OPTION --quiet --progress ' +
                 `--branch '${branch}' $SCM_URL $SD_SOURCE_DIR"; fi`
         );
 
@@ -889,8 +896,11 @@ class BitbucketScm extends Scm {
             command.push(`${gitWrapper} "git fetch origin ${prRef}"`);
             command.push(`${gitWrapper} "git merge --no-edit ${sha}"`);
             // Init & Update submodule
-            command.push(`${gitWrapper} "git submodule init"`);
-            command.push(`${gitWrapper} "git submodule update --recursive"`);
+            command.push(
+                'if [ ! -z $GIT_RECURSIVE_CLONE ] && [ $GIT_RECURSIVE_CLONE = false ]; ' +
+                    `then ${gitWrapper} "git submodule init"; ` +
+                    `else ${gitWrapper} "git submodule update --init --recursive"; fi`
+            );
         }
 
         // cd into rootDir after merging
