@@ -374,7 +374,7 @@ class BitbucketScm extends Scm {
         parsed.scmContext = scmContexts[0];
 
         if (hoek.reach(payload, 'repository.links.html.href') === undefined) {
-            throwError(`Invalid webhook payload`, 400);
+            throwError('Invalid webhook payload', 400);
         }
 
         const link = Url.parse(hoek.reach(payload, 'repository.links.html.href'));
@@ -419,6 +419,10 @@ class BitbucketScm extends Scm {
                 parsed.sha = hoek.reach(payload, 'pullrequest.source.commit.hash');
                 parsed.prNum = hoek.reach(payload, 'pullrequest.id');
                 parsed.prRef = hoek.reach(payload, 'pullrequest.source.branch.name');
+
+                const state = hoek.reach(payload, 'pullrequest.state');
+
+                parsed.prMerged = state === 'MERGED';
 
                 return parsed;
             }
@@ -808,8 +812,8 @@ class BitbucketScm extends Scm {
         // Set recursive option
         command.push(
             'if [ ! -z $GIT_RECURSIVE_CLONE ] && [ $GIT_RECURSIVE_CLONE = false ]; ' +
-                `then export GIT_RECURSIVE_OPTION=""; ` +
-                `else export GIT_RECURSIVE_OPTION="--recursive"; fi`
+                'then export GIT_RECURSIVE_OPTION=""; ' +
+                'else export GIT_RECURSIVE_OPTION="--recursive"; fi'
         );
 
         // Checkout config pipeline if this is a child pipeline
