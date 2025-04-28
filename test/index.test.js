@@ -324,7 +324,8 @@ describe('index', function () {
                 prNum: 3,
                 prRef: 'mynewbranch',
                 hookId: '1e8d4e8e-5fcf-4624-b091-b10bd6ecaf5e',
-                scmContext: 'bitbucket:bitbucket.org'
+                scmContext: 'bitbucket:bitbucket.org',
+                prMerged: false
             };
             const headers = {
                 'x-event-key': 'pullrequest:created',
@@ -345,7 +346,8 @@ describe('index', function () {
                 prNum: 7,
                 prRef: 'prbranch',
                 hookId: '1e8d4e8e-5fcf-4624-b091-b10bd6ecaf5e',
-                scmContext: 'bitbucket:bitbucket.org'
+                scmContext: 'bitbucket:bitbucket.org',
+                prMerged: false
             };
             const headers = {
                 'x-event-key': 'pullrequest:updated',
@@ -366,7 +368,8 @@ describe('index', function () {
                 prNum: 3,
                 prRef: 'mynewbranch',
                 hookId: '1e8d4e8e-5fcf-4624-b091-b10bd6ecaf5e',
-                scmContext: 'bitbucket:bitbucket.org'
+                scmContext: 'bitbucket:bitbucket.org',
+                prMerged: true
             };
             const headers = {
                 'x-event-key': 'pullrequest:fullfilled',
@@ -387,7 +390,8 @@ describe('index', function () {
                 prNum: 3,
                 prRef: 'mynewbranch',
                 hookId: '1e8d4e8e-5fcf-4624-b091-b10bd6ecaf5e',
-                scmContext: 'bitbucket:bitbucket.org'
+                scmContext: 'bitbucket:bitbucket.org',
+                prMerged: true
             };
             const headers = {
                 'x-event-key': 'pullrequest:rejected',
