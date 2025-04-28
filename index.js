@@ -419,6 +419,9 @@ class BitbucketScm extends Scm {
                 parsed.sha = hoek.reach(payload, 'pullrequest.source.commit.hash');
                 parsed.prNum = hoek.reach(payload, 'pullrequest.id');
                 parsed.prRef = hoek.reach(payload, 'pullrequest.source.branch.name');
+                
+                const state = hoek.reach(payload, 'pullrequest.state')
+                parsed.prMerged = state === 'MERGED';
 
                 return parsed;
             }
