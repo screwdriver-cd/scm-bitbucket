@@ -845,33 +845,35 @@ class BitbucketScm extends Scm {
 
             command.push(
                 trimIndentJoin([
-                    'if [ ! -z $SCM_CLONE_TYPE ] && [ $SCM_CLONE_TYPE = ssh ]; then',
-                    `    export CONFIG_URL=${parentSshCheckoutUrl};`,
-                    'elif [ ! -z $SCM_USERNAME ] && [ ! -z $SCM_ACCESS_TOKEN ]; then',
-                    `    export CONFIG_URL=https://$SCM_USERNAME:$SCM_ACCESS_TOKEN@${parentCheckoutUrl};`,
-                    'else',
-                    `    export CONFIG_URL=https://${parentCheckoutUrl};`,
-                    'fi'
+                    '    if [ ! -z $SCM_CLONE_TYPE ] && [ $SCM_CLONE_TYPE = ssh ]; then',
+                    `        export CONFIG_URL=${parentSshCheckoutUrl};`,
+                    '    elif [ ! -z $SCM_USERNAME ] && [ ! -z $SCM_ACCESS_TOKEN ]; then',
+                    `        export CONFIG_URL=https://$SCM_USERNAME:$SCM_ACCESS_TOKEN@${parentCheckoutUrl};`,
+                    '    else',
+                    `        export CONFIG_URL=https://${parentCheckoutUrl};`,
+                    '    fi;'
                 ]),
                 // Git clone
                 `export SD_CONFIG_DIR=${externalConfigDir}`,
-                `echo 'Cloning external config repo ${parentCheckoutUrl}'`,
                 trimIndentJoin([
-                    'if [ ! -z $GIT_SHALLOW_CLONE ] && [ $GIT_SHALLOW_CLONE = false ]; then',
-                    `    ${gitWrapper} "git clone $GIT_SPARSE_OPTION $GIT_RECURSIVE_OPTION --quiet --progress --branch '${parentBranch}' $CONFIG_URL $SD_CONFIG_DIR";`,
+                    'if [ ! -z $SD_SKIP_REPOSITORY_CLONE ] && [ $SD_SKIP_REPOSITORY_CLONE = true ]; then',
+                    `    echo 'Skipping cloning ${checkoutUrl}, on branch ${parentBranch}';`,
                     'else',
-                    `    ${gitWrapper} "git clone $GIT_SPARSE_OPTION --depth=50 --no-single-branch $GIT_RECURSIVE_OPTION --quiet --progress --branch '${parentBranch}' $CONFIG_URL $SD_CONFIG_DIR";`,
+                    `    echo 'Cloning external config repo ${parentCheckoutUrl}';`,
+                    '    if [ ! -z $GIT_SHALLOW_CLONE ] && [ $GIT_SHALLOW_CLONE = false ]; then',
+                    `        ${gitWrapper} "git clone $GIT_SPARSE_OPTION $GIT_RECURSIVE_OPTION --quiet --progress --branch '${parentBranch}' $CONFIG_URL $SD_CONFIG_DIR";`,
+                    '    else',
+                    `        ${gitWrapper} "git clone $GIT_SPARSE_OPTION --depth=50 --no-single-branch $GIT_RECURSIVE_OPTION --quiet --progress --branch '${parentBranch}' $CONFIG_URL $SD_CONFIG_DIR";`,
+                    '    fi;',
+                    // Sparse Checkout
+                    '    if [ ! -z "$GIT_SPARSE_CHECKOUT_PATH" ];then',
+                    `        ${gitWrapper} "git sparse-checkout set $GIT_SPARSE_CHECKOUT_PATH" && ${gitWrapper} "git checkout";`,
+                    '    fi;',
+                    // Reset to SHA
+                    `    ${gitWrapper} "git -C $SD_CONFIG_DIR reset --hard ${parentConfig.sha}";`,
+                    `    echo Reset external config repo to ${parentConfig.sha};`,
                     'fi'
-                ]),
-                // Sparse Checkout
-                trimIndentJoin([
-                    'if [ ! -z "$GIT_SPARSE_CHECKOUT_PATH" ];then',
-                    '    $SD_GIT_WRAPPER "git sparse-checkout set $GIT_SPARSE_CHECKOUT_PATH" && $SD_GIT_WRAPPER "git checkout";',
-                    'fi'
-                ]),
-                // Reset to SHA
-                `${gitWrapper} "git -C $SD_CONFIG_DIR reset --hard ${parentConfig.sha}"`,
-                `echo Reset external config repo to ${parentConfig.sha}`
+                ])
             );
         }
 
@@ -909,46 +911,54 @@ class BitbucketScm extends Scm {
 
         command.push(
             trimIndentJoin([
-                'if [ ! -z $GIT_SHALLOW_CLONE ] && [ $GIT_SHALLOW_CLONE = false ]; then',
-                `    ${gitWrapper} "git clone $GIT_SPARSE_OPTION $GIT_RECURSIVE_OPTION --quiet --progress --branch '${branch}' $SCM_URL $SD_SOURCE_DIR";`,
+                'if [ ! -z $SD_SKIP_REPOSITORY_CLONE ] && [ $SD_SKIP_REPOSITORY_CLONE = true ]; then',
+                `    echo 'Skipping cloning ${checkoutUrl}, on branch ${branch}';`,
                 'else',
-                `    ${gitWrapper} "git clone $GIT_SPARSE_OPTION --depth=50 --no-single-branch $GIT_RECURSIVE_OPTION --quiet --progress --branch '${branch}' $SCM_URL $SD_SOURCE_DIR";`,
+                '    if [ ! -z $GIT_SHALLOW_CLONE ] && [ $GIT_SHALLOW_CLONE = false ]; then',
+                `        ${gitWrapper} "git clone $GIT_SPARSE_OPTION $GIT_RECURSIVE_OPTION --quiet --progress --branch '${branch}' $SCM_URL $SD_SOURCE_DIR";`,
+                '    else',
+                `        ${gitWrapper} "git clone $GIT_SPARSE_OPTION --depth=50 --no-single-branch $GIT_RECURSIVE_OPTION --quiet --progress --branch '${branch}' $SCM_URL $SD_SOURCE_DIR";`,
+                '    fi;',
+                // Sparse Checkout
+                '    if [ ! -z "$GIT_SPARSE_CHECKOUT_PATH" ];then',
+                `        ${gitWrapper} "git sparse-checkout set $GIT_SPARSE_CHECKOUT_PATH" && ${gitWrapper} "git checkout";`,
+                '    fi;',
+                // Reset to SHA
+                `    echo 'Reset to SHA ${checkoutRef}';`,
+                `    ${gitWrapper} "git reset --hard '${checkoutRef}'";`,
                 'fi'
-            ]),
-            // Sparse Checkout
-            trimIndentJoin([
-                'if [ ! -z "$GIT_SPARSE_CHECKOUT_PATH" ];then',
-                '    $SD_GIT_WRAPPER "git sparse-checkout set $GIT_SPARSE_CHECKOUT_PATH" && $SD_GIT_WRAPPER "git checkout";',
-                'fi'
-            ]),
-            // Reset to SHA
-            `echo 'Reset to SHA ${checkoutRef}'`,
-            `${gitWrapper} "git reset --hard '${checkoutRef}'"`
+            ])
         );
-
-        // Reset to Sha
-        // command.push(`echo 'Reset to SHA ${checkoutRef}'`);
-        // command.push(`${gitWrapper} "git reset --hard '${checkoutRef}'"`);
 
         // Set config
         command.push(
             'echo Setting user name and user email',
-            `${gitWrapper} "git config user.name ${this.config.username}"`,
-            `${gitWrapper} "git config user.email ${this.config.email}"`
+            trimIndentJoin([
+                'if [ ! -z $SD_SKIP_REPOSITORY_CLONE ] && [ $SD_SKIP_REPOSITORY_CLONE = true ] && ! command -v git >/dev/null 2>&1; then',
+                `    echo 'Skipping git config';`,
+                'else',
+                `    ${gitWrapper} "git config user.name ${this.config.username}";`,
+                `    ${gitWrapper} "git config user.email ${this.config.email}";`,
+                'fi'
+            ])
         );
 
         if (prReference) {
             const prRef = prReference.replace('merge', 'head:pr');
 
             command.push(
-                `echo 'Fetching PR and merging with ${branch}'`,
-                `${gitWrapper} "git fetch origin ${prRef}"`,
-                `${gitWrapper} "git merge --no-edit ${sha}"`,
                 trimIndentJoin([
-                    'if [ ! -z $GIT_RECURSIVE_CLONE ] && [ $GIT_RECURSIVE_CLONE = false ]; then',
-                    `    ${gitWrapper} "git submodule init";`,
+                    'if [ ! -z $SD_SKIP_REPOSITORY_CLONE ] && [ $SD_SKIP_REPOSITORY_CLONE = true ]; then',
+                    `    echo 'Skipping fetching PR ${prRef}';`,
                     'else',
-                    `    ${gitWrapper} "git submodule update --init --recursive";`,
+                    `    echo 'Fetching PR and merging with ${branch}'`,
+                    `    ${gitWrapper} "git fetch origin ${prRef}"`,
+                    `    ${gitWrapper} "git merge --no-edit ${sha}"`,
+                    '    if [ ! -z $GIT_RECURSIVE_CLONE ] && [ $GIT_RECURSIVE_CLONE = false ]; then',
+                    `        ${gitWrapper} "git submodule init";`,
+                    '    else',
+                    `        ${gitWrapper} "git submodule update --init --recursive";`,
+                    '    fi;',
                     'fi'
                 ])
             );
