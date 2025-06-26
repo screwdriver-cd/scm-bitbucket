@@ -932,11 +932,11 @@ class BitbucketScm extends Scm {
 
         // Set config
         command.push(
-            'echo Setting user name and user email',
             trimIndentJoin([
-                'if [ ! -z $SD_SKIP_REPOSITORY_CLONE ] && [ $SD_SKIP_REPOSITORY_CLONE = true ] && ! command -v git >/dev/null 2>&1; then',
+                `if [ ! -z $SD_SKIP_REPOSITORY_CLONE ] && [ $SD_SKIP_REPOSITORY_CLONE = true ] && ! ${gitWrapper} "git -v" >/dev/null 2>&1; then`,
                 `    echo 'Skipping git config';`,
                 'else',
+                '    echo "Setting user name and user email";',
                 `    ${gitWrapper} "git config user.name ${this.config.username}";`,
                 `    ${gitWrapper} "git config user.email ${this.config.email}";`,
                 'fi'
