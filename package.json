@@ -52,6 +52,6 @@
     "screwdriver-data-schema": "^25.0.0",
     "screwdriver-logger": "^3.0.0",
     "screwdriver-request": "^3.0.0",
-    "screwdriver-scm-base": "^10.0.0"
+    "screwdriver-scm-base": "^10.0.1"
   }
 }

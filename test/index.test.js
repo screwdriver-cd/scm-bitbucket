@@ -533,22 +533,28 @@ describe('index', function () {
                 });
         });
 
-        it('rejects if fails', () => {
+        it('resolves with author with default values for the optional fields when there is a failure', () => {
             const err = new Error('Bitbucket API error');
+            const username = '{4f1a9b7f-586e-4e80-b9eb-a7589b4a165f}';
 
             requestMock.rejects(err);
 
             return scm
                 .decorateAuthor({
-                    username: '{4f1a9b7f-586e-4e80-b9eb-a7589b4a165f}',
+                    username,
                     token
                 })
-                .then(() => {
-                    assert.fail('Should not get here');
-                })
-                .catch(error => {
-                    assert.calledWith(requestMock, expectedOptions);
-                    assert.equal(error, err);
+                .then(author => {
+                    assert.deepEqual(
+                        {
+                            id: '',
+                            avatar: 'https://cd.screwdriver.cd/assets/unknown_user.png',
+                            name: username,
+                            username,
+                            url: 'https://cd.screwdriver.cd/'
+                        },
+                        author
+                    );
                 });
         });
     });
