@@ -332,7 +332,9 @@ describe('index', function () {
                 'x-request-uuid': '1e8d4e8e-5fcf-4624-b091-b10bd6ecaf5e'
             };
 
-            return scm.parseHook(headers, testPayloadOpen).then(result => assert.deepEqual(result, expected));
+            return scm
+                .parseHook(headers, JSON.stringify(testPayloadOpen))
+                .then(result => assert.deepEqual(result, expected));
         });
 
         it('resolves the correct parsed config for sync PR (ammending commit)', () => {
@@ -354,7 +356,9 @@ describe('index', function () {
                 'x-request-uuid': '1e8d4e8e-5fcf-4624-b091-b10bd6ecaf5e'
             };
 
-            return scm.parseHook(headers, testPayloadSync).then(result => assert.deepEqual(result, expected));
+            return scm
+                .parseHook(headers, JSON.stringify(testPayloadSync))
+                .then(result => assert.deepEqual(result, expected));
         });
 
         it('resolves the correct parsed config for closed PR after merged', () => {
@@ -376,7 +380,9 @@ describe('index', function () {
                 'x-request-uuid': '1e8d4e8e-5fcf-4624-b091-b10bd6ecaf5e'
             };
 
-            return scm.parseHook(headers, testPayloadClose).then(result => assert.deepEqual(result, expected));
+            return scm
+                .parseHook(headers, JSON.stringify(testPayloadClose))
+                .then(result => assert.deepEqual(result, expected));
         });
 
         it('resolves the correct parsed config for closed PR after declined', () => {
@@ -398,7 +404,9 @@ describe('index', function () {
                 'x-request-uuid': '1e8d4e8e-5fcf-4624-b091-b10bd6ecaf5e'
             };
 
-            return scm.parseHook(headers, testPayloadClose).then(result => assert.deepEqual(result, expected));
+            return scm
+                .parseHook(headers, JSON.stringify(testPayloadClose))
+                .then(result => assert.deepEqual(result, expected));
         });
 
         it('resolves the correct parsed config for push to repo event', () => {
@@ -418,7 +426,9 @@ describe('index', function () {
                 'x-request-uuid': '1e8d4e8e-5fcf-4624-b091-b10bd6ecaf5e'
             };
 
-            return scm.parseHook(headers, testPayloadPush).then(result => assert.deepEqual(result, expected));
+            return scm
+                .parseHook(headers, JSON.stringify(testPayloadPush))
+                .then(result => assert.deepEqual(result, expected));
         });
 
         it('resolves null if events are not supported: repoFork', () => {
@@ -426,7 +436,9 @@ describe('index', function () {
                 'x-event-key': 'repo:fork'
             };
 
-            return scm.parseHook(repoFork, testPayloadFork).then(result => assert.deepEqual(result, null));
+            return scm
+                .parseHook(repoFork, JSON.stringify(testPayloadFork))
+                .then(result => assert.deepEqual(result, null));
         });
 
         it('resolves null if events are not supported: prComment', () => {
@@ -434,7 +446,9 @@ describe('index', function () {
                 'x-event-key': 'pullrequest:comment_created'
             };
 
-            return scm.parseHook(prComment, testPayloadPrCommentCreate).then(result => assert.deepEqual(result, null));
+            return scm
+                .parseHook(prComment, JSON.stringify(testPayloadPrCommentCreate))
+                .then(result => assert.deepEqual(result, null));
         });
 
         it('resolves null if events are not supported: issueCreated', () => {
@@ -442,7 +456,9 @@ describe('index', function () {
                 'x-event-key': 'issue:created'
             };
 
-            return scm.parseHook(issueCreated, testPayloadIssueCreate).then(result => assert.deepEqual(result, null));
+            return scm
+                .parseHook(issueCreated, JSON.stringify(testPayloadIssueCreate))
+                .then(result => assert.deepEqual(result, null));
         });
     });
 
@@ -1861,7 +1877,7 @@ describe('index', function () {
         it('returns a true for a opened PR.', () => {
             headers['x-event-key'] = 'pullrequest:created';
 
-            return scm.canHandleWebhook(headers, testPayloadOpen).then(result => {
+            return scm.canHandleWebhook(headers, JSON.stringify(testPayloadOpen)).then(result => {
                 assert.strictEqual(result, true);
             });
         });
@@ -1869,7 +1885,7 @@ describe('index', function () {
         it('returns a true for a sync PR (ammending commit).', () => {
             headers['x-event-key'] = 'pullrequest:updated';
 
-            return scm.canHandleWebhook(headers, testPayloadSync).then(result => {
+            return scm.canHandleWebhook(headers, JSON.stringify(testPayloadSync)).then(result => {
                 assert.isTrue(result);
             });
         });
@@ -1877,7 +1893,7 @@ describe('index', function () {
         it('returns a true for closed PR after merged.', () => {
             headers['x-event-key'] = 'pullrequest:fullfilled';
 
-            return scm.canHandleWebhook(headers, testPayloadClose).then(result => {
+            return scm.canHandleWebhook(headers, JSON.stringify(testPayloadClose)).then(result => {
                 assert.isTrue(result);
             });
         });
@@ -1885,7 +1901,7 @@ describe('index', function () {
         it('returns a true for closed PR after declined.', () => {
             headers['x-event-key'] = 'pullrequest:rejected';
 
-            return scm.canHandleWebhook(headers, testPayloadClose).then(result => {
+            return scm.canHandleWebhook(headers, JSON.stringify(testPayloadClose)).then(result => {
                 assert.isTrue(result);
             });
         });
@@ -1893,7 +1909,7 @@ describe('index', function () {
         it('returns a true for a push event payload.', () => {
             headers['x-event-key'] = 'repo:push';
 
-            return scm.canHandleWebhook(headers, testPayloadPush).then(result => {
+            return scm.canHandleWebhook(headers, JSON.stringify(testPayloadPush)).then(result => {
                 assert.isTrue(result);
             });
         });
@@ -1901,7 +1917,7 @@ describe('index', function () {
         it('returns a true when _parseHook() returns null.', () => {
             headers['x-event-key'] = 'issue:created';
 
-            return scm.canHandleWebhook(headers, testPayloadPush).then(result => {
+            return scm.canHandleWebhook(headers, JSON.stringify(testPayloadPush)).then(result => {
                 assert.isTrue(result);
             });
         });
@@ -1910,7 +1926,7 @@ describe('index', function () {
             // eslint-disable-next-line no-underscore-dangle
             scm._parseHook = () => Promise.reject(new Error('Test error'));
 
-            return scm.canHandleWebhook(headers, testPayloadPush).then(result => {
+            return scm.canHandleWebhook(headers, JSON.stringify(testPayloadPush)).then(result => {
                 assert.strictEqual(result, false);
             });
         });
@@ -1919,7 +1935,7 @@ describe('index', function () {
             headers['x-event-key'] = 'repo:push';
             testPayloadPush.repository.links.html.href = 'https://github.com/batman/test';
 
-            return scm.canHandleWebhook(headers, testPayloadPush).then(result => {
+            return scm.canHandleWebhook(headers, JSON.stringify(testPayloadPush)).then(result => {
                 assert.isFalse(result);
             });
         });
