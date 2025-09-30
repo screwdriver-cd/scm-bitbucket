@@ -371,10 +371,11 @@ class BitbucketScm extends Scm {
      * necessary data to execute a Screwdriver job with.
      * @method parseHook
      * @param  {Object}  headers  The request headers associated with the webhook payload
-     * @param  {Object}  payload  The webhook payload received from the SCM service.
+     * @param  {String}  payload  The webhook payload received from the SCM service.
      * @return {Object}           A key-map of data related to the received payload
      */
     async _parseHook(headers, payload) {
+        const parsedPayload = JSON.parse(payload);
         const [typeHeader, actionHeader] = headers['x-event-key'].split(':');
         const parsed = {};
         const scmContexts = this._getScmContexts();
@@ -382,11 +383,11 @@ class BitbucketScm extends Scm {
         parsed.hookId = headers['x-request-uuid'];
         parsed.scmContext = scmContexts[0];
 
-        if (hoek.reach(payload, 'repository.links.html.href') === undefined) {
+        if (hoek.reach(parsedPayload, 'repository.links.html.href') === undefined) {
             throwError('Invalid webhook payload', 400);
         }
 
-        const link = Url.parse(hoek.reach(payload, 'repository.links.html.href'));
+        const link = Url.parse(hoek.reach(parsedPayload, 'repository.links.html.href'));
         const checkoutUrl = `${link.protocol}//${link.hostname}${link.pathname}.git`;
 
         if (!`${link.hostname}${link.pathname}.git`.startsWith(this.hostname)) {
@@ -398,11 +399,11 @@ class BitbucketScm extends Scm {
                 if (actionHeader !== 'push') {
                     return null;
                 }
-                const changes = hoek.reach(payload, 'push.changes');
+                const changes = hoek.reach(parsedPayload, 'push.changes');
 
                 parsed.type = 'repo';
                 parsed.action = 'push';
-                parsed.username = hoek.reach(payload, 'actor.uuid');
+                parsed.username = hoek.reach(parsedPayload, 'actor.uuid');
                 parsed.checkoutUrl = checkoutUrl;
                 parsed.branch = hoek.reach(changes[0], 'new.name');
                 parsed.sha = hoek.reach(changes[0], 'new.target.hash');
@@ -422,14 +423,14 @@ class BitbucketScm extends Scm {
                 }
 
                 parsed.type = 'pr';
-                parsed.username = hoek.reach(payload, 'actor.uuid');
+                parsed.username = hoek.reach(parsedPayload, 'actor.uuid');
                 parsed.checkoutUrl = checkoutUrl;
-                parsed.branch = hoek.reach(payload, 'pullrequest.destination.branch.name');
-                parsed.sha = hoek.reach(payload, 'pullrequest.source.commit.hash');
-                parsed.prNum = hoek.reach(payload, 'pullrequest.id');
-                parsed.prRef = hoek.reach(payload, 'pullrequest.source.branch.name');
+                parsed.branch = hoek.reach(parsedPayload, 'pullrequest.destination.branch.name');
+                parsed.sha = hoek.reach(parsedPayload, 'pullrequest.source.commit.hash');
+                parsed.prNum = hoek.reach(parsedPayload, 'pullrequest.id');
+                parsed.prRef = hoek.reach(parsedPayload, 'pullrequest.source.branch.name');
 
-                const state = hoek.reach(payload, 'pullrequest.state');
+                const state = hoek.reach(parsedPayload, 'pullrequest.state');
 
                 parsed.prMerged = state === 'MERGED';
 
@@ -1065,7 +1066,7 @@ class BitbucketScm extends Scm {
      * Determine if a scm module can handle the received webhook
      * @method canHandleWebhook
      * @param  {Object}    headers     The request headers associated with the webhook payload
-     * @param  {Object}    payload     The webhook payload received from the SCM service
+     * @param  {String}    payload     The webhook payload received from the SCM service
      * @return {Promise}
      */
     _canHandleWebhook(headers, payload) {
