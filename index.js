@@ -825,7 +825,7 @@ class BitbucketScm extends Scm {
                 'if [ ! -z $GIT_RECURSIVE_CLONE ] && [ $GIT_RECURSIVE_CLONE = false ]; then',
                 '    export GIT_RECURSIVE_OPTION="";',
                 'else',
-                '    export GIT_RECURSIVE_OPTION="--recursive";',
+                '    export GIT_RECURSIVE_OPTION="--recursive --shallow-submodules";',
                 'fi'
             ]),
             // Set sparse option
@@ -958,7 +958,7 @@ class BitbucketScm extends Scm {
                     '    if [ ! -z $GIT_RECURSIVE_CLONE ] && [ $GIT_RECURSIVE_CLONE = false ]; then',
                     `        ${gitWrapper} "git submodule init";`,
                     '    else',
-                    `        ${gitWrapper} "git submodule update --init --recursive";`,
+                    `        ${gitWrapper} "git submodule update --init --recursive --depth 1";`,
                     '    fi;',
                     'fi'
                 ])
