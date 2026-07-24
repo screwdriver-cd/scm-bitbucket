@@ -53,6 +53,67 @@ function throwError(errorReason, errorCode = 500) {
     throw err;
 }
 
+// Allowlist for branch-like values before they are interpolated into shell
+// command strings. A branch name reaches an `eval`-wrapped `git fetch`, so any
+// value that clears this list must be free of shell-breakout characters.
+// Widen the allowlist deliberately if a real branch name is rejected.
+const allowedChars = [
+    '0-9', // ASCII digits
+    'A-Za-z', // ASCII alphabets
+    '\\p{Script_Extensions=Hiragana}', // Hiragana
+    '\\p{Script_Extensions=Katakana}', // Katakana
+    '\\p{Script_Extensions=Han}', // CJK Han (Kanji)
+    '\\p{Script_Extensions=Hangul}', // Hangul
+    '\\p{Script_Extensions=Greek}', // Greek
+    ',._/#%@\\-+=()', // Filename-safe ASCII symbols allowed by Git
+    '\\u3005', // Ideographic iteration mark: 々
+    '\\u3010', // Left black lenticular bracket: 【
+    '\\u3011', // Right black lenticular bracket: 】
+    '\\uff1a', // Fullwidth colon: ：
+    '\\uff08', // Fullwidth left parenthesis: （
+    '\\uff09', // Fullwidth right parenthesis: ）
+    '\\u3000', // Ideographic space
+    '\\uff10-\\uff19', // Fullwidth digits
+    '\\uff21-\\uff3a', // Fullwidth uppercase letters
+    '\\uff41-\\uff5a' // Fullwidth lowercase letters
+];
+const BRANCH_NAME_ALLOWED_CHAR_RE = new RegExp(`^[${allowedChars.join('')}]+$`, 'u');
+const BRANCH_NAME_DANGEROUS_CHAR_RE = /['"`;!$&<>|]/u;
+
+/**
+ * Detect ASCII control characters (0x00-0x1F, 0x7F).
+ * @param  {String} name branch-like name
+ * @returns {Boolean}    true when control chars are included
+ */
+function hasControlCharacters(name) {
+    for (const char of name) {
+        const codePoint = char.codePointAt(0);
+
+        if (codePoint <= 0x1f || codePoint === 0x7f) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+/**
+ * Validate branch-like names used in shell command interpolation.
+ * @param  {String} name branch-like name
+ * @returns {Boolean}    true when the name is safe
+ */
+function isSafeBranchName(name) {
+    if (typeof name !== 'string' || name.length === 0) {
+        return false;
+    }
+
+    return (
+        BRANCH_NAME_ALLOWED_CHAR_RE.test(name) &&
+        !hasControlCharacters(name) &&
+        !BRANCH_NAME_DANGEROUS_CHAR_RE.test(name)
+    );
+}
+
 /**
  * Get repo information
  * @method  getRepoInfo
@@ -945,6 +1006,9 @@ class BitbucketScm extends Scm {
         );
 
         if (prReference) {
+            if (!isSafeBranchName(prReference)) {
+                throwError(`Invalid PR branch name: ${prReference}`, 400);
+            }
             const prRef = prReference.replace('merge', 'head:pr');
 
             command.push(

