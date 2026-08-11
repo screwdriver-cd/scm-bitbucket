@@ -1031,7 +1031,9 @@ class BitbucketScm extends Scm {
 
         // cd into rootDir after merging
         if (rootDir) {
-            command.push(`cd ${rootDir}`);
+            const escapedRootDir = rootDir.replace(/'/g, "'\\''");
+
+            command.push(`cd '${escapedRootDir}'`);
         }
 
         return Promise.resolve({ name: 'sd-checkout-code', command: command.join(' && ') });
